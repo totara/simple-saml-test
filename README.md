@@ -80,3 +80,9 @@ Try and access http://saml2:8089 and confirm you see the test environment.
 
 *Important*: The URL that Totara and the URL that you access the site on via your browser must be the same.
 
+## Developing This Image
+
+* Fork this repo, create a new branch and make the change.
+* Test your image by building it directly with `docker build -t test_saml2 .`
+* Try running the image with the commands above, swapping out with the test image name.
+* If it's all good, submit a pull request for the change.

@@ -589,7 +589,8 @@ $config = [
      * Example:
      *  'session.cookie.samesite' => 'None',
      */
-    'session.cookie.samesite' => \SimpleSAML\Utils\HTTP::canSetSameSiteNone() ? 'None' : null,
+    // 'session.cookie.samesite' => \SimpleSAML\Utils\HTTP::canSetSameSiteNone() ? 'None' : null,
+    'session.cookie.samesite' => null, // Breaks otherwise in Chrome.
 
     /*
      * Options to override the default settings for php sessions.
@@ -817,8 +818,8 @@ $config = [
     'language.cookie.secure' => true,
     'language.cookie.httponly' => false,
     'language.cookie.lifetime' => (60 * 60 * 24 * 900),
-    'language.cookie.samesite' => \SimpleSAML\Utils\HTTP::canSetSameSiteNone() ? 'None' : null,
-
+    // 'language.cookie.samesite' => \SimpleSAML\Utils\HTTP::canSetSameSiteNone() ? 'None' : null,
+    'language.cookie.samesite' => null, // Breaks otherwise in Chrome
     /**
      * Custom getLanguage function called from SimpleSAML\Locale\Language::getLanguage().
      * Function should return language code of one of the available languages or NULL.
