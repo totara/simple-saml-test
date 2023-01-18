@@ -15,28 +15,38 @@ if (empty($totara_instance)) {
     die('No TOTARA_URL environment variable was defined.');
 }
 
-$metadata[$totara_instance . '/auth/saml2/sp/metadata.php'] = [
-    'metadata-set' => 'saml20-idp-remote',
-    'entityid' => $totara_instance . '/auth/saml2/sp/metadata.php',
-    'SingleSignOnService' => [
-        [
-            'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-            'Location' => $totara_instance . '/auth/saml2/www/saml2/idp/SSOService.php',
+$instances = [];
+if (str_contains($totara_instance, ',')) {
+    $instances = explode(',', $totara_instance);
+    array_walk($instances, fn($instance) => trim($instance));
+} else {
+    $instances[] = $totara_instance;
+}
+
+foreach ($instances as $totara_instance) {
+    $metadata[$totara_instance . '/auth/saml2/sp/metadata.php'] = [
+        'metadata-set' => 'saml20-idp-remote',
+        'entityid' => $totara_instance . '/auth/saml2/sp/metadata.php',
+        'SingleSignOnService' => [
+            [
+                'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+                'Location' => $totara_instance . '/auth/saml2/www/saml2/idp/SSOService.php',
+            ],
         ],
-    ],
-    'SingleLogoutService' => [
-        [
-            'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-            'Location' => $totara_instance . '/auth/saml2/sp/saml2-logout.php',
+        'SingleLogoutService' => [
+            [
+                'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+                'Location' => $totara_instance . '/auth/saml2/sp/saml2-logout.php',
+            ],
         ],
-    ],
-    'AssertionConsumerService' => $totara_instance . '/auth/saml2/sp/saml2-acs.php',
-    'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
-    'contacts' => [
-        [
-            'emailAddress' => 'team.platform@totara.com',
-            'contactType' => 'technical',
-            'givenName' => 'Administrator',
+        'AssertionConsumerService' => $totara_instance . '/auth/saml2/sp/saml2-acs.php',
+        'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
+        'contacts' => [
+            [
+                'emailAddress' => 'team.platform@totara.com',
+                'contactType' => 'technical',
+                'givenName' => 'Administrator',
+            ],
         ],
-    ],
-];
+    ];
+}
