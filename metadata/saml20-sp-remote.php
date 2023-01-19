@@ -45,6 +45,9 @@ $load_metadata = function (string $domain, bool $reset = false) use ($temp_dir) 
     curl_exec($ch);
 
     if (curl_error($ch)) {
+        // Silently continue
+        curl_close($ch);
+        fclose($fp);
         return false;
     }
 
@@ -59,6 +62,11 @@ $reset = isset($_GET['refresh_metadata']) && $_GET['refresh_metadata'] === 'y';
 $metadata = [];
 foreach ($instances as $totara_instance) {
     $xml = $load_metadata($totara_instance . '/auth/saml2/sp/metadata.php', $reset);
+
+    // No data, silently ignore it.
+    if (!$xml) {
+        continue;
+    }
 
     \SimpleSAML\Utils\XML::checkSAMLMessage($xml, 'saml-meta');
     $entities = \SimpleSAML\Metadata\SAMLParser::parseDescriptorsString($xml);
