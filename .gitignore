@@ -1,3 +1,5 @@
 .idea
 server.pem
 server.crt
+simplesamlphp-*/
+simplesamlphp-*.tar.gz

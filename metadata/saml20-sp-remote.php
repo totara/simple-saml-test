@@ -23,30 +23,61 @@ if (str_contains($totara_instance, ',')) {
     $instances[] = $totara_instance;
 }
 
+$config = \SimpleSAML\Configuration::getInstance();
+$temp_dir = $config->getPathValue('tempdir');
+
+// Load each metadata file
+$load_metadata = function (string $domain, bool $reset = false) use ($temp_dir) {
+    // Key it
+    $filename = $temp_dir . sha1($domain) . '.xml';
+    if (file_exists($filename) && !$reset) {
+        return file_get_contents($filename);
+    }
+
+    $ch = curl_init($domain);
+    $fp = fopen($filename, 'w');
+
+    curl_setopt($ch, CURLOPT_FILE, $fp);
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+
+    curl_exec($ch);
+
+    if (curl_error($ch)) {
+        return false;
+    }
+
+    curl_close($ch);
+    fclose($fp);
+
+    return file_get_contents($filename);
+};
+
+$reset = isset($_GET['refresh_metadata']) && $_GET['refresh_metadata'] === 'y';
+
+$metadata = [];
 foreach ($instances as $totara_instance) {
-    $metadata[$totara_instance . '/auth/saml2/sp/metadata.php'] = [
-        'metadata-set' => 'saml20-idp-remote',
-        'entityid' => $totara_instance . '/auth/saml2/sp/metadata.php',
-        'SingleSignOnService' => [
-            [
-                'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-                'Location' => $totara_instance . '/auth/saml2/www/saml2/idp/SSOService.php',
-            ],
-        ],
-        'SingleLogoutService' => [
-            [
-                'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-                'Location' => $totara_instance . '/auth/saml2/sp/saml2-logout.php',
-            ],
-        ],
-        'AssertionConsumerService' => $totara_instance . '/auth/saml2/sp/saml2-acs.php',
-        'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
-        'contacts' => [
-            [
-                'emailAddress' => 'team.platform@totara.com',
-                'contactType' => 'technical',
-                'givenName' => 'Administrator',
-            ],
-        ],
-    ];
+    $xml = $load_metadata($totara_instance . '/auth/saml2/sp/metadata.php', $reset);
+
+    \SimpleSAML\Utils\XML::checkSAMLMessage($xml, 'saml-meta');
+    $entities = \SimpleSAML\Metadata\SAMLParser::parseDescriptorsString($xml);
+
+    // get all metadata for the entities
+    foreach ($entities as &$entity) {
+        $data = $entity->getMetadata20SP();
+
+        if (isset($data['entityDescriptor'])) {
+            unset($data['entityDescriptor']);
+        }
+
+        $entity = [
+            'saml20-sp-remote' => $data,
+        ];
+    }
+
+    // transpose from $entities[entityid][type] to $output[type][entityid]
+    $output = \SimpleSAML\Utils\Arrays::transpose($entities);
+
+    $metadata = array_merge($metadata, $output['saml20-sp-remote']);
 }
