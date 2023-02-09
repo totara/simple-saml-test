@@ -9,18 +9,18 @@
 /*
  * Example SimpleSAMLphp SAML 2.0 SP
  */
-$totara_instance = getenv('TOTARA_URL');
+$sp_instance = getenv('SP_URLS');
 
-if (empty($totara_instance)) {
-    die('No TOTARA_URL environment variable was defined.');
+if (empty($sp_instance)) {
+    die('No SP_URLS environment variable was defined.');
 }
 
 $instances = [];
-if (str_contains($totara_instance, ',')) {
-    $instances = explode(',', $totara_instance);
+if (str_contains($sp_instance, ',')) {
+    $instances = explode(',', $sp_instance);
     array_walk($instances, fn($instance) => trim($instance));
 } else {
-    $instances[] = $totara_instance;
+    $instances[] = $sp_instance;
 }
 
 $config = \SimpleSAML\Configuration::getInstance();
@@ -57,11 +57,11 @@ $load_metadata = function (string $domain, bool $reset = false) use ($temp_dir) 
     return file_get_contents($filename);
 };
 
-$reset = isset($_GET['refresh_metadata']) && $_GET['refresh_metadata'] === 'y';
+$refresh = isset($_GET['refresh_metadata']) && (in_array($_GET['refresh_metadata'], ['y', 'yes', 't', 'true', 1, '1'], true));
 
 $metadata = [];
-foreach ($instances as $totara_instance) {
-    $xml = $load_metadata($totara_instance . '/auth/saml2/sp/metadata.php', $reset);
+foreach ($instances as $sp_instance) {
+    $xml = $load_metadata($sp_instance, $refresh);
 
     // No data, silently ignore it.
     if (!$xml) {

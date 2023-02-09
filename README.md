@@ -11,7 +11,7 @@ There are two environmental variables that need to be set in the Docker image fo
 
 | Variable      | Description                                                                                                                                             |
 |---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `TOTARA_URL`  | The URLs of the Totara instance to mark as trusted. Eg: `http://my-totara-instance.local,http://another-site`. Accept multiple if seperated by a comma. |
+| `SP_URLS`  | The URLs of the Service Provider instances to register. Eg: `http://my-instance.local/path/to/metadata.php,http://another-site/path/to/metadata.php`. Accept multiple if seperated by a comma. **Must be the full URL to the metadata**. |
 | `LISTEN_PORT` | The port used to access the service. Defaults to `8089`.                                                                                                |
 | `SITE_TITLE`  | Override the default site title, used when running multiple to tell them apart.                                                                         |
 
@@ -22,23 +22,23 @@ There are two environmental variables that need to be set in the Docker image fo
 docker pull totara/simple-saml-test:latest
 
 # Start the service
-docker run --rm -p 8089:8089 -e LISTEN_PORT=8089 -e TOTARA_URL={YOUR_TOTARA_URL} -it totara/simple-saml-test:latest
+docker run --rm -p 8089:8089 -e LISTEN_PORT=8089 -e SP_URLS=http://{YOUR_SP_INSTANCE}/path/to/metadata.php -it totara/simple-saml-test:latest
 ```
 
-Set `{YOUR_TOTARA_URL}` to the domain of your Totara instance.
+Set `{YOUR_SP_INSTANCE}` to the domain of your service provider instance (typically a Totara instance but technically could work with any SAML site).
 
-If your Totara instance domain isn't publicly resolvable (such as it's a test environment) you will need to teach the
+If your domain isn't publicly resolvable (such as it's a test environment) you will need to teach the
 Domain/IP to this docker image.
 
 ```shell
-# Totara instance is running directly on the host machine
-docker run --add-host={YOUR_TOTARA_URL}:host-gateway ... -it totara/simple-saml-test:latest
+# Instance is running directly on the host machine
+docker run --add-host={YOUR_SP_INSTANCE}:host-gateway ... -it totara/simple-saml-test:latest
 
-# Totara instance is somewhere else, replace the domain & IP
-docker run --add-host={YOUR_TOTARA_URL}:{IP_OF_SITE} ... -it totara/simple-saml-test:latest
+# Instance is somewhere else, replace the domain & IP
+docker run --add-host={YOUR_SP_INSTANCE}:{IP_OF_SITE} ... -it totara/simple-saml-test:latest
 ```
 
-Once started, you can access the service via `http://localhost:{LISTEN_PORT}`.
+Once started, you can access the service via `http://localhost:{LISTEN_PORT}` (defaults to 8089).
 
 ### Using Totara Docker Dev
 
@@ -59,7 +59,7 @@ services:
     ports:
       - "8089:8089"
     environment:
-      - TOTARA_URL=http://${SAML_TOTARA_URL:-totara74}
+      - SP_URLS=${SAML_TOTARA_URLS}
       - LISTEN_PORT=8089
       - SITE_TITLE="Testing"
 ```
@@ -67,7 +67,7 @@ services:
 Edit your `.env` file and add the following line.
 
 ```dotenv
-SAML_TOTARA_URL=totara74
+SAML_TOTARA_URLS=http://totara74/path/to/sp/metadata.php
 ```
 
 In it place the name of the Totara instance you're using to connect.
@@ -79,6 +79,8 @@ Start the docker service using `t up saml2`.
 Try and access http://saml2:8089 and confirm you see the test environment.
 
 *Important*: The URL that Totara and the URL that you access the site on via your browser must be the same.
+
+The path to the metadata file depends on what SAML plugin you are using which is why it's not specified here.
 
 ## Developing This Image
 
