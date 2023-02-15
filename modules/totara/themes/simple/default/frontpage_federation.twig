@@ -32,11 +32,14 @@
     </dl>
     {% endif %}
 
-    {% if metaentries.remote is iterable and metaentries.remote is not empty %}
+
     <h2>{% trans %}Trusted entities (Your Remote Instances){% endtrans %}</h2>
+
+    {% if isadmin %}
 
     <p><a href="?refresh_metadata=y">Refresh Remote Metadata</a></p>
 
+    {% if metaentries.remote is iterable and metaentries.remote is not empty %}
     {% for key, set in metaentries.remote %}
     <fieldset class="fancyfieldset">
         <legend>{{ mtype[key]|trans }} (Trusted)</legend>
@@ -61,6 +64,12 @@
         </ul>
     </fieldset>
     {% endfor %}
+    {% else %}
+        <p>No metadata could be found, check your SP_URLS environmental variable or try refreshing.</p>
+    {% endif %}
+
+    {% else %}
+        <p>You must log in as admin to see the remote service providers.</p>
     {% endif %}
 
     <h2>{{ 'Tools'|trans }}</h2>

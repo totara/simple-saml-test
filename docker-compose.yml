@@ -15,8 +15,6 @@ services:
       - ./metadata/:/var/www/html/metadata/
       - ./config/:/var/www/config/
       - ./modules/totara/themes/:/var/www/html/modules/totara/themes/
-    extra_hosts:
-      - "development.totara.local:host-gateway"
 
   prod:
     build: .
@@ -26,5 +24,3 @@ services:
       - LISTEN_PORT=8098
       - SITE_HEADER=Prod SAML Image
       - SP_URLS=$SP_URLS
-    extra_hosts:
-      - "development.totara.local:host-gateway"
