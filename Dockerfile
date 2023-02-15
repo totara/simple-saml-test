@@ -18,7 +18,7 @@ RUN mkdir /app && \
     rm -rf metadata
 
 
-FROM php:8.0-apache-buster
+FROM php:8.0-apache-buster as dev
 
 COPY --from=node_builder /app/samlphp/ /var/www/html/
 
@@ -35,7 +35,6 @@ RUN sed -ri -e 's!/var/www/html!/var/www/html/www/!g' /etc/apache2/sites-availab
     sed -ri -e 's!:80>!:${LISTEN_PORT}>!g' /etc/apache2/sites-available/*.conf && \
     sed -ri -e "s!usenewui!:usenewui2!g" /var/www/html/www/index.php # Hack to prevent auto-redirect to login page
 
-
 # Generate the internal certificate
 RUN cd /var/www/html/cert &&  \
     openssl req -subj /C=NZ/ST=Wellington/L=Wellington/O=Totara/OU=Development/CN=server \
@@ -43,6 +42,30 @@ RUN cd /var/www/html/cert &&  \
     chown www-data server.* && \
     chown www-data /var/www/html/cache
 
+# Expose PHP errors to the CLI
+RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" && \
+    echo "log_errors = On\nerror_log = /dev/stderr" > "$PHP_INI_DIR/conf.d/error.ini"
+
+# Override the core module so we can alter the theme
+RUN sed -ri -e 's!core:show_metadata.tpl.php!show_metadata.tpl.php!g' /var/www/html/modules/core/www/show_metadata.php && \
+    sed -ri -e 's!core:frontpage_federation.tpl.php!frontpage_federation.tpl.php!g' /var/www/html/modules/core/www/frontpage_federation.php
+
+RUN mkdir -p /var/www/html/modules/totara/locales/en/LC_MESSAGES && \
+    cp /var/www/html/modules/core/locales/en/LC_MESSAGES/core.po /var/www/html/modules/totara/locales/en/LC_MESSAGES/totara.po
+
+FROM php:8.0-apache-buster as prod
+
+ENV SIMPLESAMLPHP_CONFIG_DIR /var/www/config/
+ENV LISTEN_PORT 8089
+
+# Default expose port
+EXPOSE 8089
+
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
+COPY --from=dev /var/www/html /var/www/html
+COPY --from=dev /etc/apache2/ /etc/apache2/
+
 COPY config/ /var/www/config/
 COPY metadata/ /var/www/html/metadata/
-COPY modules/totara/ /var/www/html/modules/totara/
+COPY modules/totara/themes/ /var/www/html/modules/totara/themes/

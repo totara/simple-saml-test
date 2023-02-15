@@ -9,18 +9,19 @@
 /*
  * Example SimpleSAMLphp SAML 2.0 SP
  */
-$totara_instance = getenv('TOTARA_URL');
+$sp_instance = getenv('SP_URLS');
 
-if (empty($totara_instance)) {
-    die('No TOTARA_URL environment variable was defined.');
+if (empty($sp_instance)) {
+    echo 'No SP_URLS environment variable were defined.';
+    return;
 }
 
 $instances = [];
-if (str_contains($totara_instance, ',')) {
-    $instances = explode(',', $totara_instance);
+if (str_contains($sp_instance, ',')) {
+    $instances = explode(',', $sp_instance);
     array_walk($instances, fn($instance) => trim($instance));
 } else {
-    $instances[] = $totara_instance;
+    $instances[] = $sp_instance;
 }
 
 $config = \SimpleSAML\Configuration::getInstance();
@@ -57,11 +58,11 @@ $load_metadata = function (string $domain, bool $reset = false) use ($temp_dir) 
     return file_get_contents($filename);
 };
 
-$reset = isset($_GET['refresh_metadata']) && $_GET['refresh_metadata'] === 'y';
+$refresh = isset($_GET['refresh_metadata']) && (in_array($_GET['refresh_metadata'], ['y', 'yes', 't', 'true', 1, '1'], true));
 
 $metadata = [];
-foreach ($instances as $totara_instance) {
-    $xml = $load_metadata($totara_instance . '/auth/saml2/sp/metadata.php', $reset);
+foreach ($instances as $sp_instance) {
+    $xml = $load_metadata($sp_instance, $refresh);
 
     // No data, silently ignore it.
     if (!$xml) {
@@ -74,6 +75,13 @@ foreach ($instances as $totara_instance) {
     // get all metadata for the entities
     foreach ($entities as &$entity) {
         $data = $entity->getMetadata20SP();
+
+        // Hack to get en-US behaving
+        foreach ($data as $key => $value) {
+            if (is_array($value) && isset($value['en-US'])) {
+                $data[$key]['en'] = $value['en-US'];
+            }
+        }
 
         if (isset($data['entityDescriptor'])) {
             unset($data['entityDescriptor']);
@@ -88,4 +96,10 @@ foreach ($instances as $totara_instance) {
     $output = \SimpleSAML\Utils\Arrays::transpose($entities);
 
     $metadata = array_merge($metadata, $output['saml20-sp-remote']);
+}
+
+if ($refresh) {
+    $new_url = str_replace('refresh_metadata=y', 'refreshed=done', $_SERVER['REQUEST_URI']);
+    header('Location: ' . $new_url);
+    exit;
 }
