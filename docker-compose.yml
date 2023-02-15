@@ -10,10 +10,13 @@ services:
     environment:
       - LISTEN_PORT=8099
       - SITE_HEADER=Dev SAML Image
+      - SP_URLS=$SP_URLS
     volumes:
       - ./metadata/:/var/www/html/metadata/
       - ./config/:/var/www/config/
-      - ./modules/totara/:/var/www/html/modules/totara/
+      - ./modules/totara/themes/:/var/www/html/modules/totara/themes/
+    extra_hosts:
+      - "development.totara.local:host-gateway"
 
   prod:
     build: .
@@ -22,3 +25,6 @@ services:
     environment:
       - LISTEN_PORT=8098
       - SITE_HEADER=Prod SAML Image
+      - SP_URLS=$SP_URLS
+    extra_hosts:
+      - "development.totara.local:host-gateway"

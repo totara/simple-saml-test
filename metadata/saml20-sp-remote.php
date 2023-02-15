@@ -12,7 +12,8 @@
 $sp_instance = getenv('SP_URLS');
 
 if (empty($sp_instance)) {
-    die('No SP_URLS environment variable was defined.');
+    echo 'No SP_URLS environment variable were defined.';
+    return;
 }
 
 $instances = [];
@@ -75,6 +76,13 @@ foreach ($instances as $sp_instance) {
     foreach ($entities as &$entity) {
         $data = $entity->getMetadata20SP();
 
+        // Hack to get en-US behaving
+        foreach ($data as $key => $value) {
+            if (is_array($value) && isset($value['en-US'])) {
+                $data[$key]['en'] = $value['en-US'];
+            }
+        }
+
         if (isset($data['entityDescriptor'])) {
             unset($data['entityDescriptor']);
         }
@@ -88,4 +96,10 @@ foreach ($instances as $sp_instance) {
     $output = \SimpleSAML\Utils\Arrays::transpose($entities);
 
     $metadata = array_merge($metadata, $output['saml20-sp-remote']);
+}
+
+if ($refresh) {
+    $new_url = str_replace('refresh_metadata=y', 'refreshed=done', $_SERVER['REQUEST_URI']);
+    header('Location: ' . $new_url);
+    exit;
 }

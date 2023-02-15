@@ -5,7 +5,7 @@
  */
 
 $env = getenv('SAML_TRUSTED');
-$trusted = $env ? [$env] : [];
+$trusted = $env ? [$env] : null;
 $title = getenv('SITE_HEADER') ?: 'SimpleSAML Test';
 
 $config = [
@@ -203,7 +203,7 @@ $config = [
      * https://idp.example.org/ssp/, then
      * http://idp.example.org/ssp/module.php/core/postredirect.php must be accessible.
      */
-    'enable.http_post' => false,
+    'enable.http_post' => true,
 
     /*
      * Set the allowed clock skew between encrypting/decrypting assertions
@@ -255,7 +255,7 @@ $config = [
     'debug' => [
         'saml' => true,
         'backtraces' => true,
-        'validatexml' => false,
+        'validatexml' => true,
     ],
 
     /*
@@ -266,7 +266,7 @@ $config = [
      * the error to 'technicalcontact_email'.
      */
     'showerrors' => true,
-    'errorreporting' => true,
+    'errorreporting' => false,
 
     /*
      * Custom error show function called from SimpleSAML\Error\Error::show.
@@ -295,8 +295,8 @@ $config = [
      * Options: [syslog,file,errorlog,stderr]
      *
      */
-    'logging.level' => SimpleSAML\Logger::NOTICE,
-    'logging.handler' => 'syslog',
+    'logging.level' => SimpleSAML\Logger::ERR,
+    'logging.handler' => 'stderr',
 
     /*
      * Specify the format of the logs. Its use varies depending on the log handler used (for instance, you cannot
@@ -796,9 +796,7 @@ $config = [
      * Languages available, RTL languages, and what language is the default.
      */
     'language.available' => [
-        'en', 'no', 'nn', 'se', 'da', 'de', 'sv', 'fi', 'es', 'ca', 'fr', 'it', 'nl', 'lb',
-        'cs', 'sl', 'lt', 'hr', 'hu', 'pl', 'pt', 'pt-br', 'tr', 'ja', 'zh', 'zh-tw', 'ru',
-        'et', 'he', 'id', 'sr', 'lv', 'ro', 'eu', 'el', 'af', 'zu', 'xh', 'st',
+        'en'
     ],
     'language.rtl' => ['ar', 'dv', 'fa', 'ur', 'he'],
     'language.default' => 'en',
@@ -901,7 +899,7 @@ $config = [
      * change. If you don't want to check the source templates for every request,
      * set it to false.
      */
-    'template.auto_reload' => false,
+    'template.auto_reload' => true,
 
     /*
      * Set this option to true to indicate that your installation of SimpleSAMLphp
