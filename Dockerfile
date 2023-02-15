@@ -18,7 +18,7 @@ RUN mkdir /app && \
     rm -rf metadata
 
 
-FROM php:8.0-apache-buster
+FROM php:8.0-apache-buster as dev
 
 COPY --from=node_builder /app/samlphp/ /var/www/html/
 
@@ -42,6 +42,17 @@ RUN cd /var/www/html/cert &&  \
       -newkey rsa:3072 -new -x509 -days 3652 -nodes -out server.crt -keyout server.pem && \
     chown www-data server.* && \
     chown www-data /var/www/html/cache
+
+FROM php:8.0-apache-buster as prod
+
+ENV SIMPLESAMLPHP_CONFIG_DIR /var/www/config/
+ENV LISTEN_PORT 8089
+
+# Default expose port
+EXPOSE 8089
+
+COPY --from=dev /var/www/html /var/www/html
+COPY --from=dev /etc/apache2/ /etc/apache2/
 
 COPY config/ /var/www/config/
 COPY metadata/ /var/www/html/metadata/

@@ -85,6 +85,6 @@ The path to the metadata file depends on what SAML plugin you are using which is
 ## Developing This Image
 
 * Fork this repo, create a new branch and make the change.
-* Test your image by building it directly with `docker build -t test_saml2 .`
-* Try running the image with the commands above, swapping out with the test image name.
-* If it's all good, submit a pull request for the change.
+* Test using the built-in docker image with docker-compose, you can run `docker-compose up --build dev` to run the dev version with the config/metadata/modules folders volumed in (real time changes).
+* Once everything is all good, test with the prod version `docker-compose up --build prod`.
+* If it is all good, submit a pull request for the change.
