@@ -1,5 +1,91 @@
 <?php
 
+$sources = [
+    'user1:password' => [
+        'uid' => ['denise_steeves'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['denise_steeves'],
+        'firstname' => ['Denise'],
+        'lastname' => ['Steeves'],
+        'email' => ['denise.steeves@example.com'],
+    ],
+    'user2:password' => [
+        'uid' => ['jennie_nichols'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['jennie_nichols'],
+        'firstname' => ['Jennie'],
+        'lastname' => ['Nichols'],
+        'email' => ['jennie.nichols@example.com'],
+    ],
+    'user3:password' => [
+        'uid' => ['noah_larson'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['noah_larson'],
+        'firstname' => ['Noah'],
+        'lastname' => ['Larson'],
+        'email' => ['noah.larson@example.com'],
+    ],
+    'user4:password' => [
+        'uid' => ['kenneth_castro'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['kenneth_castro'],
+        'firstname' => ['Kenneth'],
+        'lastname' => ['Castro'],
+        'email' => ['kenneth.castro@example.com'],
+    ],
+    'user5:password' => [
+        'uid' => ['phyllis_mcdonalid'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['phyllis_mcdonalid'],
+        'firstname' => ['Phyllis'],
+        'lastname' => ['Mcdonalid'],
+        'email' => ['phyllis.mcdonalid@example.com'],
+    ],
+    'user6:password' => [
+        'uid' => ['jar_hamilton'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['jar_hamilton'],
+        'firstname' => ['Jar'],
+        'lastname' => ['Hamilton'],
+        'email' => ['jar.hamilton@example.com'],
+    ],
+    'user7:password' => [
+        'uid' => ['femi_olu'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['femi_olu'],
+        'firstname' => ['Femi'],
+        'lastname' => ['Olu'],
+        'email' => ['femi.olu@example.com'],
+    ],
+    'user8:password' => [
+        'uid' => ['tommy_ramos'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['tommy_ramos'],
+        'firstname' => ['Tommy'],
+        'lastname' => ['Ramos'],
+        'email' => ['tommy.ramos@example.com'],
+    ],
+    'user9:password' => [
+        'uid' => ['naomi_green'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['naomi_green'],
+        'firstname' => ['Naomi'],
+        'lastname' => ['Green'],
+        'email' => ['naomi.green@example.com'],
+    ],
+    'user10:password' => [
+        'uid' => ['sarah_allison'],
+        'eduPersonAffiliation' => ['member', 'student'],
+        'username' => ['sarah_allison'],
+        'firstname' => ['Sarah'],
+        'lastname' => ['Allison'],
+        'email' => ['sarah.allison@example.com'],
+    ],
+];
+if (file_exists('/var/www/custom_auth_sources.php')) {
+    $sources = include('/var/www/custom_auth_sources.php');
+}
+
 $config = [
     /*
      * When multiple authentication sources are defined, you can specify one to use by default
@@ -84,95 +170,14 @@ $config = [
 
 
 
-    'example-userpass' => [
+    'example-userpass' => array_merge([
         'exampleauth:UserPass',
 
         // Give the user an option to save their username for future login attempts
         // And when enabled, what should the default be, to save the username or not
         'remember.username.enabled' => true,
         //'remember.username.checked' => false,
-
-        'user1:password' => [
-            'uid' => ['denise_steeves'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['denise_steeves'],
-            'firstname' => ['Denise'],
-            'lastname' => ['Steeves'],
-            'email' => ['denise.steeves@example.com'],
-        ],
-        'user2:password' => [
-            'uid' => ['jennie_nichols'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['jennie_nichols'],
-            'firstname' => ['Jennie'],
-            'lastname' => ['Nichols'],
-            'email' => ['jennie.nichols@example.com'],
-        ],
-        'user3:password' => [
-            'uid' => ['noah_larson'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['noah_larson'],
-            'firstname' => ['Noah'],
-            'lastname' => ['Larson'],
-            'email' => ['noah.larson@example.com'],
-        ],
-        'user4:password' => [
-            'uid' => ['kenneth_castro'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['kenneth_castro'],
-            'firstname' => ['Kenneth'],
-            'lastname' => ['Castro'],
-            'email' => ['kenneth.castro@example.com'],
-        ],
-        'user5:password' => [
-            'uid' => ['phyllis_mcdonalid'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['phyllis_mcdonalid'],
-            'firstname' => ['Phyllis'],
-            'lastname' => ['Mcdonalid'],
-            'email' => ['phyllis.mcdonalid@example.com'],
-        ],
-        'user6:password' => [
-            'uid' => ['jar_hamilton'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['jar_hamilton'],
-            'firstname' => ['Jar'],
-            'lastname' => ['Hamilton'],
-            'email' => ['jar.hamilton@example.com'],
-        ],
-        'user7:password' => [
-            'uid' => ['femi_olu'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['femi_olu'],
-            'firstname' => ['Femi'],
-            'lastname' => ['Olu'],
-            'email' => ['femi.olu@example.com'],
-        ],
-        'user8:password' => [
-            'uid' => ['tommy_ramos'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['tommy_ramos'],
-            'firstname' => ['Tommy'],
-            'lastname' => ['Ramos'],
-            'email' => ['tommy.ramos@example.com'],
-        ],
-        'user9:password' => [
-            'uid' => ['naomi_green'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['naomi_green'],
-            'firstname' => ['Naomi'],
-            'lastname' => ['Green'],
-            'email' => ['naomi.green@example.com'],
-        ],
-        'user10:password' => [
-            'uid' => ['sarah_allison'],
-            'eduPersonAffiliation' => ['member', 'student'],
-            'username' => ['sarah_allison'],
-            'firstname' => ['Sarah'],
-            'lastname' => ['Allison'],
-            'email' => ['sarah.allison@example.com'],
-        ],
-    ],
+    ], $sources),
 
 
     /*

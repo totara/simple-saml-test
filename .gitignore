@@ -4,3 +4,4 @@ server.crt
 simplesamlphp-*/
 simplesamlphp-*.tar.gz
 .env
+custom_auth_sources.php

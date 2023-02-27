@@ -73,6 +73,33 @@ Try and access http://saml2:8089 and confirm you see the test environment.
 
 The path to the metadata file depends on what SAML plugin you are using which is why it's not specified here.
 
+## Custom Users
+By default there's a hard-coded list of users and attributes. However you can provide your own PHP file via volumes and replace the user list with your own.
+
+Create a new file called `custom_auth_sources.php` with the following structure:
+```php
+<?php
+
+return [
+// username:password => [array of attributes]
+    'my_user:password1' => [
+        'uid' => ['my_uid'],
+        'username' => ['my_username'],
+    ],
+    'another:password' => [
+        'uid' => ['another'],
+        'username' => ['annie_example'],
+        'firstname' => ['annie']
+    ],
+```
+
+The `username:password` section applies to the IdP, while the internal array is what will be posted back to the SP.
+In the example above, the `my_user` user is known as `my_username` or `my_uid` to the service provider and will never see `my_user`.
+
+Once created, include it as a volume, such as:
+`docker run ... -v /path/to/custom_auth_sources.php:/var/www/custom_auth_sources.php ... -it totara/simple-saml-test:latest`
+
+
 ## Developing This Image
 
 * Fork this repo, create a new branch and make the change.
