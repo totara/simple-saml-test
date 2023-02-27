@@ -124,6 +124,7 @@ class MetadataManager
      * @return void
      */
     public function add_url(string $url) {
+        $this->get_sp_list();
         $key = $this->url_to_hash($url);
 
         $this->sp_list[$key] = [

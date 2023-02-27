@@ -91,12 +91,19 @@ class ManageMetadataController {
             $list[$key]['delete'] = Module::getModuleURL('totara/manage_metadata.php?action=delete&key=' . $key);
             $list[$key]['refresh'] = Module::getModuleURL('totara/manage_metadata.php?action=refresh&key=' . $key);
 
-            $diff = round(($now - $value['fetched']) / 60);
+            $diff = round(($now - $value['fetched']));
 
-            if ($diff > 1) {
-                $list[$key]['time'] = $diff . ' mins ago';
+            if ($diff < 10) {
+                $list[$key]['time'] = 'Within the last 10 seconds';
+            } else if ($diff < 60) {
+                $list[$key]['time'] = $diff . ' seconds ago';
             } else {
-                $list[$key]['time'] = 'Within the last minute';
+                $diff = round(($now - $value['fetched']) / 60);
+                if ($diff > 1) {
+                    $list[$key]['time'] = $diff . ' mins ago';
+                } else {
+                    $list[$key]['time'] = 'Within the last minute';
+                }
             }
         }
 
