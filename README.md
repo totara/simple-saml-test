@@ -7,11 +7,8 @@ Currently embedded is SimpleSAMLphp version **1.19.7**.
 
 ## Configuration
 
-There are two environmental variables that need to be set in the Docker image for this to work.
-
 | Variable      | Description                                                                                                                                             |
 |---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `SP_URLS`  | The URLs of the Service Provider instances to register. Eg: `http://my-instance.local/path/to/metadata.php,http://another-site/path/to/metadata.php`. Accept multiple if seperated by a comma. **Must be the full URL to the metadata**. |
 | `LISTEN_PORT` | The port used to access the service. Defaults to `8089`.                                                                                                |
 | `SITE_TITLE`  | Override the default site title, used when running multiple to tell them apart.                                                                         |
 
@@ -22,10 +19,15 @@ There are two environmental variables that need to be set in the Docker image fo
 docker pull totara/simple-saml-test:latest
 
 # Start the service
-docker run --rm -p 8089:8089 -e LISTEN_PORT=8089 -e SP_URLS=http://{YOUR_SP_INSTANCE}/path/to/metadata.php -it totara/simple-saml-test:latest
+docker run --rm -p 8089:8089 -e LISTEN_PORT=8089 -it totara/simple-saml-test:latest
 ```
 
-Set `{YOUR_SP_INSTANCE}` to the domain of your service provider instance (typically a Totara instance but technically could work with any SAML site).
+Once started, you can access the service via `http://localhost:{LISTEN_PORT}` (defaults to 8089).
+
+Open the site, and then navigate to Federation -> Manage Metadata (you'll neeed to sign in with the admin account).
+Add any SP instances on the page there, the URL must be the full URL to your metadata (it does not fully validate).
+
+Eg: http://{YOUR_SP_INSTANCE}/path/to/metadata.php
 
 If your domain isn't publicly resolvable (such as it's a test environment) you will need to teach the
 Domain/IP to this docker image.
@@ -37,8 +39,6 @@ docker run --add-host={YOUR_SP_INSTANCE}:host-gateway ... -it totara/simple-saml
 # Instance is somewhere else, replace the domain & IP
 docker run --add-host={YOUR_SP_INSTANCE}:{IP_OF_SITE} ... -it totara/simple-saml-test:latest
 ```
-
-Once started, you can access the service via `http://localhost:{LISTEN_PORT}` (defaults to 8089).
 
 ### Using Totara Docker Dev
 
@@ -59,18 +59,9 @@ services:
     ports:
       - "8089:8089"
     environment:
-      - SP_URLS=${SAML_TOTARA_URLS}
       - LISTEN_PORT=8089
       - SITE_TITLE="Testing"
 ```
-
-Edit your `.env` file and add the following line.
-
-```dotenv
-SAML_TOTARA_URLS=http://totara74/path/to/sp/metadata.php
-```
-
-In it place the name of the Totara instance you're using to connect.
 
 Make sure you add `saml2` to your local hosts file, so it resolves in your browser.
 

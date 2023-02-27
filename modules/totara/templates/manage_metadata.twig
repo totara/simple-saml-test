@@ -1,0 +1,37 @@
+{% set pagetitle = '{totara:manage_metadata:page_title}'|trans %}
+{% set frontpage_section = 'federation' %}
+{% extends "base.twig" %}
+
+{% block content %}
+    {% include "@totara/_menu.twig" %}
+
+    <h2>Manage Configured Service Providers</h2>
+
+    <div id="existing-metadata">
+        <ul>
+            {% for key,sp in sp_list %}
+            <li>
+                <a href="{{ sp.manage }}">{{ sp.url }}</a> ({{ sp.time }}) - [<a href="{{ sp.delete }}" onclick="return confirm('This will remove this entry completely. Are you sure?')">Delete</a> | <a href="{{ sp.refresh }}">Refresh</a>]
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+
+    <form method="post" class="pure-form" enctype="multipart/form-data" action="#converted">
+        <h2>Add New Service Provider</h2>
+        <p>If you enter the same URL as an existing entry, you will override that entry.</p>
+        <div class="pure-control-group">
+            <div>
+                <label for="metadata_url">URL to the Service Provider's Metadata</label><br>
+                <input type="url" id="metadata_url" name="metadata_url" class="text edge" />
+                <button class="pure-button pure-button-red pure-input-1-1">Add</button>
+            </div>
+        </div>
+        <br>
+        <div class="center">
+
+        </div>
+    </form>
+
+{% endblock %}

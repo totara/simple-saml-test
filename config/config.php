@@ -980,14 +980,12 @@ $config = [
      * Both Shibboleth and SAML 2.0
      */
     'authproc.idp' => [
-        /* Enable the authproc filter below to add URN prefixes to all attributes
-        10 => array[
+        /* Enable the authproc filter below to add URN prefixes to all attributes */
+        10 => [
             'class' => 'core:AttributeMap', 'addurnprefix'
         ],
-        */
-        /* Enable the authproc filter below to automatically generated eduPersonTargetedID.
-        20 => 'core:TargetedID',
-        */
+        /* nable the authproc filter below to automatically generated eduPersonTargetedID. */
+//        20 => 'core:TargetedID',
 
         // Adopts language from attribute to use in UI
         30 => 'core:LanguageAdaptor',
@@ -1006,7 +1004,7 @@ $config = [
         /*
          * Search attribute "distinguishedName" for pattern and replaces if found
          */
-        /*
+
         60 => [
             'class' => 'core:AttributeAlter',
             'pattern' => '/OU=studerende/',
@@ -1014,7 +1012,7 @@ $config = [
             'subject' => 'distinguishedName',
             '%replace',
         ],
-        */
+
 
         /*
          * Consent module is enabled (with no permanent storage, using cookies).
@@ -1071,7 +1069,7 @@ $config = [
      * This option allows you to specify a directory for your metadata outside of the standard metadata directory
      * included in the standard distribution of the software.
      */
-    'metadatadir' => 'metadata',
+    'metadatadir' => getenv('SIMPLESAMLPHP_METADATA_DIR') ?? 'metadata',
 
     /*
      * This option configures the metadata sources. The metadata sources is given as an array with
