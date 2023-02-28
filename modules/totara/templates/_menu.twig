@@ -1,0 +1,20 @@
+<div class="pure-g frontpage-menu">
+    <div class="pure-u-2-3">
+        <div class="pure-menu pure-menu-horizontal">
+            <ul class="pure-menu-list">
+                <li class="pure-menu-item{% if frontpage_section == "welcome" %} pure-menu-selected{% endif %}">
+                    <a href="{{ coremodurl }}frontpage_welcome.php" class="pure-menu-link">Welcome</a>
+                </li>
+                <li class="pure-menu-item{% if frontpage_section == "config" %} pure-menu-selected{% endif %}">
+                    <a href="{{ coremodurl }}frontpage_config.php" class="pure-menu-link">Configuration</a>
+                </li>
+                <li class="pure-menu-item{% if frontpage_section == "auth" %} pure-menu-selected{% endif %}">
+                    <a href="{{ coremodurl }}frontpage_auth.php" class="pure-menu-link">Authentication</a>
+                </li>
+                <li class="pure-menu-item{% if frontpage_section == "federation" %} pure-menu-selected{% endif %}">
+                    <a href="{{ coremodurl }}frontpage_federation.php" class="pure-menu-link">Federation</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,4 @@
+statistics-main:
+    path:       /
+    defaults:   { _controller: 'SimpleSAML\Module\totara\ManageMetadataController::main' }
+

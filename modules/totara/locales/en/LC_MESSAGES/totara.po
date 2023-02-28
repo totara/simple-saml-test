@@ -1,0 +1,5 @@
+msgid "{totara:link_manage_metadata}"
+msgstr "Mange Metadata"
+
+msgid "{totara:manage_metadata:page_title}"
+msgstr "Manage Metadata"

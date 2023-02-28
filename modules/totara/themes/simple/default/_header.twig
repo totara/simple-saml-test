@@ -1,8 +1,8 @@
 <style type="text/css">
-#header, #footer {
-    background: linear-gradient(141deg, #90b800 0%, #00afb8 75%); /* because */
+#footer, #header {
+    background: linear-gradient(141deg, #017AB7 0%, #36BCAF 50%, #68BC45 100%); /* because */
 }
-#header a {
+#header a, #footer a {
     color: #fff;
     text-decoration: none;
 }
@@ -22,7 +22,10 @@
         {% endif %}
           <img class="pure-img hidden" src="" alt="{% trans %}Logo{% endtrans %}">
         </div>
-        <p><a href="/module.php/core/frontpage_welcome.php">Admin Backend</a></p>
+        <p>
+          <a href="/module.php/core/frontpage_welcome.php">Admin Backend</a> |
+          <a href="/module.php/totara/manage_metadata.php">Manage Metadata</a>
+        </p>
       </div>
     </div>
   </div>{# wrap #}
