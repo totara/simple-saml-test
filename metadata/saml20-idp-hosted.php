@@ -23,6 +23,8 @@ $metadata['__DYNAMIC:1__'] = [
      * 'config/authsources.php'.
      */
     'auth' => 'example-userpass',
+    'sign.logout' => true,
+    'redirect.sign' => true,
 
     /* Uncomment the following to use the uri NameFormat on attributes. */
 
