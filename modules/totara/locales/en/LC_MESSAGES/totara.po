@@ -1,5 +1,5 @@
 msgid "{totara:link_manage_metadata}"
-msgstr "Mange Metadata"
+msgstr "Mange Service Providers"
 
 msgid "{totara:manage_metadata:page_title}"
-msgstr "Manage Metadata"
+msgstr "Manage Service Providers"

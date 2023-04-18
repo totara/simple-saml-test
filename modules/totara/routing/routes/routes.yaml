@@ -1,0 +1,17 @@
+totara-metadata:
+    path:       /metadata
+    defaults:   {
+        _controller: 'SimpleSAML\Module\totara\Controller\ManageMetadata::main'
+    }
+
+totara-metadata-refresh:
+    path:       /metadata/refresh/{key}
+    defaults:   {
+        _controller: 'SimpleSAML\Module\totara\Controller\ManageMetadata::refresh'
+    }
+
+totara-metadata-delete:
+    path:       /metadata/delete/{key}
+    defaults:   {
+        _controller: 'SimpleSAML\Module\totara\Controller\ManageMetadata::delete'
+    }

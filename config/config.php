@@ -8,6 +8,8 @@ $env = getenv('SAML_TRUSTED');
 $trusted = $env ? [$env] : null;
 $title = getenv('SITE_HEADER') ?: 'SimpleSAML Test';
 
+$httpUtils = new \SimpleSAML\Utils\HTTP();
+
 $config = [
 
     /*******************************
@@ -77,7 +79,7 @@ $config = [
      * also as the technical contact in generated metadata.
      */
     'technicalcontact_name' => 'Administrator',
-    'technicalcontact_email' => 'team.platform@totaralearning.com',
+    'technicalcontact_email' => 'team.platform@totara.com',
 
     /*
      * (Optional) The method by which email is delivered.  Defaults to mail which utilizes the
@@ -145,10 +147,8 @@ $config = [
     'auth.adminpassword' => '$2y$10$7.IbMHXHJIiqSlCFcBRF4.Paayv83i3.QVZpK6aSuzIO7pq3fUFqS',
 
     /*
-     * Set this options to true if you want to require administrator password to access the web interface
-     * or the metadata pages, respectively.
+     * Set this option to true if you want to require administrator password to access the metadata.
      */
-    'admin.protectindexpage' => false,
     'admin.protectmetadata' => false,
 
     /*
@@ -467,18 +467,7 @@ $config = [
      * Note that shib13-idp has been deprecated and will be removed in SimpleSAMLphp 2.0.
      */
     'enable.saml20-idp' => true,
-    'enable.shib13-idp' => false,
     'enable.adfs-idp' => false,
-
-    /*
-     * Whether SimpleSAMLphp should sign the response or the assertion in SAML 1.1 authentication
-     * responses.
-     *
-     * The default is to sign the assertion element, but that can be overridden by setting this
-     * option to TRUE. It can also be overridden on a pr. SP basis by adding an option with the
-     * same name to the metadata of the SP.
-     */
-    'shib13.signresponse' => true,
 
 
 
@@ -499,11 +488,13 @@ $config = [
      *
      */
 
-     'module.enable' => [
-         'exampleauth' => true,
-         'core' => true,
-         'saml' => true
-     ],
+    'module.enable' => [
+        'exampleauth' => true,
+        'core' => true,
+        'admin' => true,
+        'saml' => true,
+        'totara' => true,
+    ],
 
 
     /*************************
@@ -561,7 +552,7 @@ $config = [
      * Example:
      *  'session.cookie.domain' => '.example.org',
      */
-    'session.cookie.domain' => null,
+    'session.cookie.domain' => '',
 
     /*
      * Set the secure flag in the cookie.
@@ -589,7 +580,7 @@ $config = [
      * Example:
      *  'session.cookie.samesite' => 'None',
      */
-    // 'session.cookie.samesite' => \SimpleSAML\Utils\HTTP::canSetSameSiteNone() ? 'None' : null,
+    // 'session.cookie.samesite' => $httpUtils->canSetSameSiteNone() ? 'None' : null,
     'session.cookie.samesite' => null, // Breaks otherwise in Chrome.
 
     /*
@@ -758,41 +749,6 @@ $config = [
      *************************************/
 
     /*
-     * Language-related options.
-     */
-    'language' => [
-        /*
-         * An array in the form 'language' => <list of alternative languages>.
-         *
-         * Each key in the array is the ISO 639 two-letter code for a language,
-         * and its value is an array with a list of alternative languages that
-         * can be used if the given language is not available at some point.
-         * Each alternative language is also specified by its ISO 639 code.
-         *
-         * For example, for the "no" language code (Norwegian), we would have:
-         *
-         * 'priorities' => [
-         *      'no' => ['nb', 'nn', 'en', 'se'],
-         *      ...
-         * ],
-         *
-         * establishing that if a translation for the "no" language code is
-         * not available, we look for translations in "nb",
-         * and so on, in that order.
-         */
-        'priorities' => [
-            'no' => ['nb', 'nn', 'en', 'se'],
-            'nb' => ['no', 'nn', 'en', 'se'],
-            'nn' => ['no', 'nb', 'en', 'se'],
-            'se' => ['nb', 'no', 'nn', 'en'],
-            'nr' => ['zu', 'en'],
-            'nd' => ['zu', 'en'],
-            'tw' => ['st', 'en'],
-            'nso' => ['st', 'en'],
-        ],
-    ],
-
-    /*
      * Languages available, RTL languages, and what language is the default.
      */
     'language.available' => [
@@ -816,8 +772,9 @@ $config = [
     'language.cookie.secure' => true,
     'language.cookie.httponly' => false,
     'language.cookie.lifetime' => (60 * 60 * 24 * 900),
-    // 'language.cookie.samesite' => \SimpleSAML\Utils\HTTP::canSetSameSiteNone() ? 'None' : null,
+    // 'language.cookie.samesite' => $httpUtils->canSetSameSiteNone() ? 'None' : null,
     'language.cookie.samesite' => null, // Breaks otherwise in Chrome
+
     /**
      * Custom getLanguage function called from SimpleSAML\Locale\Language::getLanguage().
      * Function should return language code of one of the available languages or NULL.
@@ -829,33 +786,6 @@ $config = [
      * Example:
      *   'language.get_language_function' => ['\SimpleSAML\Module\example\Template', 'getLanguage'],
      */
-
-    /*
-     * Extra dictionary for attribute names.
-     * This can be used to define local attributes.
-     *
-     * The format of the parameter is a string with <module>:<dictionary>.
-     *
-     * Specifying this option will cause us to look for modules/<module>/dictionaries/<dictionary>.definition.json
-     * The dictionary should look something like:
-     *
-     * {
-     *     "firstattribute": {
-     *         "en": "English name",
-     *         "no": "Norwegian name"
-     *     },
-     *     "secondattribute": {
-     *         "en": "English name",
-     *         "no": "Norwegian name"
-     *     }
-     * }
-     *
-     * Note that all attribute names in the dictionary must in lowercase.
-     *
-     * Example: 'attributes.extradictionary' => 'ourmodule:ourattributes',
-     */
-    'attributes.extradictionary' => null,
-
 
 
     /**************
@@ -872,8 +802,6 @@ $config = [
      * any text to appear in the header.
      */
     'theme.header' => $title,
-
-    'usenewui' => true,
 
     /**
      * A template controller, if any.
@@ -938,6 +866,13 @@ $config = [
             'etag' => false,
         ],
     ],
+
+    /**
+     * Set to a full URL if you want to redirect users that land on SimpleSAMLphp's
+     * front page to somewhere more useful. If left unset, a basic welcome message
+     * is shown.
+     */
+    'frontpage.redirect' => '/admin',
 
 
     /*********************
@@ -1223,4 +1158,16 @@ $config = [
      * The prefix we should use on our Redis datastore.
      */
     'store.redis.prefix' => 'SimpleSAMLphp',
+
+    /*********************
+    | IdP/SP PROXY MODE |
+     *********************/
+
+    /*
+     * If the IdP in front of SimpleSAMLphp in IdP/SP proxy mode sends
+     * AuthnContextClassRef, decide whether the AuthnContextClassRef will be
+     * processed by the IdP/SP proxy or if it will be passed to the SP behind
+     * the IdP/SP proxy.
+     */
+    'proxymode.passAuthnContextClassRef' => false,
 ];

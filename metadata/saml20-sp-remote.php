@@ -6,30 +6,22 @@
  * See: https://simplesamlphp.org/docs/stable/simplesamlphp-reference-sp-remote
  */
 
-use SimpleSAML\Module\totara\MetadataManager;
+use SimpleSAML\Module\totara\Metadata\Manager;
+use SimpleSAML\Utils\Arrays;
 
-$manager = MetadataManager::make();
+$manager = Manager::make();
 
 $metadata = [];
 foreach ($manager->get_sp_list() as $key => $sp_instance) {
-
     if (empty($sp_instance['fetched'])) {
         continue;
     }
 
-    $xml = $manager->get_metadata_file($key);
-
-    // No data, silently ignore it.
-    if (!$xml) {
-        continue;
-    }
-
-    \SimpleSAML\Utils\XML::checkSAMLMessage($xml, 'saml-meta');
-    $entities = \SimpleSAML\Metadata\SAMLParser::parseDescriptorsString($xml);
-
-    // get all metadata for the entities
-    foreach ($entities as &$entity) {
-        $data = $entity->getMetadata20SP();
+    $entities = [];
+    foreach ($sp_instance['entities'] as $entity) {
+        $entity_id = $entity['entity_id'];
+        $name = $entity['name'];
+        $data = json_decode($manager->get_metadata_file($entity['file']), true);
 
         // Hack to get en-US behaving
         foreach ($data as $key => $value) {
@@ -42,15 +34,14 @@ foreach ($manager->get_sp_list() as $key => $sp_instance) {
             unset($data['entityDescriptor']);
         }
 
-        $data['name']['en'] .= ' - ' . $sp_instance['url'];
-
-        $entity = [
+        $data['name']['en'] .= ' - ' . $entity_id;
+        $entities[$entity_id] = [
             'saml20-sp-remote' => $data,
         ];
     }
 
     // transpose from $entities[entityid][type] to $output[type][entityid]
-    $output = \SimpleSAML\Utils\Arrays::transpose($entities);
+    $output = (new Arrays())->transpose($entities);
 
     $metadata = array_merge($metadata, $output['saml20-sp-remote']);
 }
