@@ -1,20 +1,37 @@
 {% set pagetitle = '{totara:manage_metadata:page_title}'|trans %}
-{% set frontpage_section = 'federation' %}
+{% set frontpage_section = 'tmanage_metadata' %}
 {% extends "base.twig" %}
 
 {% block content %}
-    {% include "@totara/_menu.twig" %}
+    {%- include "@totara/x_menu.twig" %}
 
     <h2>Manage Configured Service Providers</h2>
+    <p><a href="{{ idp_logout }}">Trigger IdP Initiated Logout</a></p>
 
     <div id="existing-metadata">
+        {% for key,sp in sp_list %}
+        <h3>{{ sp.url }}</h3>
+        <p>
+            [
+                <a href="{{ sp.delete }}" onclick="return confirm('This will remove this entry completely. Are you sure?')">Delete</a>
+                |
+                <a href="{{ sp.refresh }}">Refresh</a> ({{ sp.time }})
+            ]
+        </p>
+
         <ul>
-            {% for key,sp in sp_list %}
+            {% for entity in sp.entities %}
             <li>
-                <a href="{{ sp.manage }}">{{ sp.url }}</a> ({{ sp.time }}) - [<a href="{{ sp.delete }}" onclick="return confirm('This will remove this entry completely. Are you sure?')">Delete</a> | <a href="{{ sp.refresh }}">Refresh</a>]
+                <strong>{{ entity.name }}</strong><br>
+                <small>
+                    <a href="{{ entity.manage }}">View Metadata</a> |
+                    <a href="{{ entity.idp_login }}">IdP Login</a>
+                </small><br>
+                <small><em>{{ entity.entity_id }}</em></small>
             </li>
             {% endfor %}
         </ul>
+        {% endfor %}
     </div>
 
 

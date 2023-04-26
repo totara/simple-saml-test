@@ -6,7 +6,7 @@
  * See: https://simplesamlphp.org/docs/stable/simplesamlphp-reference-idp-hosted
  */
 
-$metadata['__DYNAMIC:1__'] = [
+$metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = [
     /*
      * The hostname of the server (VHOST) that will use this SAML entity.
      *
@@ -23,33 +23,35 @@ $metadata['__DYNAMIC:1__'] = [
      * 'config/authsources.php'.
      */
     'auth' => 'example-userpass',
-    'sign.logout' => true,
+
+    'validate.logout' => false,
+    'redirect.validate' => false,
     'redirect.sign' => true,
 
     /* Uncomment the following to use the uri NameFormat on attributes. */
-
-    'attributes.NameFormat' => 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
-
-    'authproc' => array(
-       1 => array(
-           'class' => 'saml:TransientNameID',
-       ),
-        2 => array(
-            'class' => 'saml:PersistentNameID',
-            'attribute' => 'eduPersonPrincipalName',
-        ),
-        3 => array(
-            'class' => 'saml:AttributeNameID',
-            'attribute' => 'mail',
-            'Format' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress',
-        ),
-    ),
-
-    'NameIDFormat' => [
-        'urn:oasis:names:tc:SAML:2.0:nameid-format:transient ',
-        'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent ',
-        'urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress ',
-    ],
+    //
+    // 'attributes.NameFormat' => 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri',
+    //
+    // 'authproc' => array(
+    //    1 => array(
+    //        'class' => 'saml:TransientNameID',
+    //    ),
+    //     2 => array(
+    //         'class' => 'saml:PersistentNameID',
+    //         'attribute' => 'eduPersonPrincipalName',
+    //     ),
+    //     3 => array(
+    //         'class' => 'saml:AttributeNameID',
+    //         'attribute' => 'mail',
+    //         'Format' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress',
+    //     ),
+    // ),
+    //
+    // 'NameIDFormat' => [
+    //     'urn:oasis:names:tc:SAML:2.0:nameid-format:transient ',
+    //     'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent ',
+    //     'urn:oasis:names:tc:SAML:2.0:nameid-format:emailAddress ',
+    // ],
 
     /*
      * Uncomment the following to specify the registration information in the
