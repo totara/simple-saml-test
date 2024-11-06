@@ -82,8 +82,8 @@ $sources = [
         'email' => ['sarah.allison@example.com'],
     ],
 ];
-if (file_exists('/var/www/custom_auth_sources.php')) {
-    $sources = include('/var/www/custom_auth_sources.php');
+if (file_exists('/var/www/custom-auth-sources.php')) {
+    $sources = include('/var/www/custom-auth-sources.php');
 }
 
 $config = [

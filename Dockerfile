@@ -1,4 +1,4 @@
-FROM node:18-alpine as node_builder
+FROM node:18-alpine AS node_builder
 
 # Define the SAML version installed
 ARG SAML_VERSION=2.0.3
@@ -15,14 +15,14 @@ RUN mkdir /app && \
     rm -rf metadata
 
 
-FROM php:8.0-apache-buster as dev
+FROM php:8.0-apache-buster AS dev
 
 COPY --from=node_builder /app/samlphp/ /var/www/html/
 
-ENV SIMPLESAMLPHP_CONFIG_DIR /var/www/config/
-ENV SIMPLESAMLPHP_METADATA_DIR /var/www/metadata/
-ENV SIMPLESAMLPHP_METADATA_STORAGE_DIR /var/www/metadata_storage/
-ENV LISTEN_PORT 8089
+ENV SIMPLESAMLPHP_CONFIG_DIR=/var/www/config/
+ENV SIMPLESAMLPHP_METADATA_DIR=/var/www/metadata/
+ENV SIMPLESAMLPHP_METADATA_STORAGE_DIR=/var/www/metadata_storage/
+ENV LISTEN_PORT=8089
 
 # Default expose port
 EXPOSE 8089
@@ -36,8 +36,13 @@ RUN sed -ri -e 's!/var/www/html!/var/www/html/public/!g' /etc/apache2/sites-avai
 # Generate the internal certificate
 RUN cd /var/www/html/cert &&  \
     openssl req -subj /C=NZ/ST=Wellington/L=Wellington/O=Totara/OU=Development/CN=server \
-      -newkey rsa:3072 -new -x509 -days 3652 -nodes -out server.crt -keyout server.pem && \
-    chown www-data server.*
+      -newkey rsa:3072 -new -x509 -days 3650 -nodes -out server.crt -keyout server.pem && \
+    openssl req -subj /C=NZ/ST=Wellington/L=Wellington/O=Totara/OU=Development/CN=server \
+      -newkey rsa:3072 -new -x509 -days 3650 -nodes -out new_server.crt -keyout new_server.pem && \
+    openssl req -subj /C=NZ/ST=Wellington/L=Wellington/O=Totara/OU=Development/CN=server \
+      -newkey rsa:3072 -new -x509 -days 1 -nodes -out expired_server.crt -keyout expired_server.pem && \
+    chown www-data *.crt && \
+    chown www-data *.pem
 
 # Expose PHP errors to the CLI
 RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" && \
@@ -48,12 +53,12 @@ RUN mkdir -p /var/www/metadata_storage && \
 
 
 
-FROM php:8.0-apache-buster as prod
+FROM php:8.0-apache-buster AS prod
 
-ENV SIMPLESAMLPHP_CONFIG_DIR /var/www/config/
-ENV SIMPLESAMLPHP_METADATA_DIR /var/www/metadata/
-ENV SIMPLESAMLPHP_METADATA_STORAGE_DIR /var/www/metadata_storage/
-ENV LISTEN_PORT 8089
+ENV SIMPLESAMLPHP_CONFIG_DIR=/var/www/config/
+ENV SIMPLESAMLPHP_METADATA_DIR=/var/www/metadata/
+ENV SIMPLESAMLPHP_METADATA_STORAGE_DIR=/var/www/metadata_storage/
+ENV LISTEN_PORT=8089
 
 # Default expose port
 EXPOSE 8089
