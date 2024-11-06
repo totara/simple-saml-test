@@ -77,7 +77,7 @@ The path to the metadata file depends on what SAML plugin you are using which is
 
 By default, there's a hard-coded list of users and attributes. However, you can provide your own PHP file via volumes and replace the user list with your own.
 
-Create a new file called `custom_auth_sources.php` with the following structure:
+Create a new file called `custom-auth-sources.php` with the following structure:
 
 ```php
 <?php
@@ -93,13 +93,52 @@ return [
         'username' => ['annie_example'],
         'firstname' => ['annie']
     ],
+]
 ```
 
 The `username:password` section applies to the IdP, while the internal array is what will be posted back to the SP.
 In the example above, the `my_user` user is known as `my_username` or `my_uid` to the service provider and will never see `my_user`.
 
 Once created, include it as a volume, such as:
-`docker run ... -v /path/to/custom_auth_sources.php:/var/www/custom_auth_sources.php ... -it totara/simple-saml-test:latest`
+`docker run ... -v /path/to/custom-auth-sources.php:/var/www/custom-auth-sources.php ... -it totara/simple-saml-test:latest`
+
+## Custom IdP Configuration
+
+To change the settings in `./metadata/saml20-idp-hosted.php` you can create a file called `custom-saml20-idp-hosted.php`.
+Return an array of settings to override or merge into the `saml20-idp-hosted.php` main file.
+
+Once created, include it as a volume, such as:
+`docker run ... -v /path/to/custom-saml20-idp-hosted.php:/var/www/custom-saml20-idp-hosted.php ... -it totara/simple-saml-test:latest`
+
+### Enable Other Certificates
+Three certificates are provided with this docker image:
++ server.crt / server.pem - Normal key that lasts 10 years
++ new_server.crt / new_server.pem - Another key that lasts 10 years
++ expired_server.crt / expired_server.pem - Key that's expired.
+
+The first is automatically used, but the new and expired can be set by adding the following to your `custom-saml20-idp-hosted.php` override.
+
+```php
+# To change the active key
+return [
+  'privatekey' => 'new_server.pem',
+  'certificate' => 'new_server.crt',
+];
+
+# To have both the regular & new keys together
+return [
+  'privatekey' => 'server.pem',
+  'certificate' => 'server.crt',
+  'new_privatekey' => 'new_server.pem',
+  'new_certificate' => 'new_server.crt',
+];
+
+# To use the expired key
+return [
+  'privatekey' => 'expired_server.pem',
+  'certificate' => 'expired_server.crt',
+];
+```
 
 ## Developing This Image
 

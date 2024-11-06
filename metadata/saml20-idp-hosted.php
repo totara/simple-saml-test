@@ -6,7 +6,17 @@
  * See: https://simplesamlphp.org/docs/stable/simplesamlphp-reference-idp-hosted
  */
 
-$metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = [
+
+$extra = [];
+if (file_exists('/var/www/custom-saml20-idp-hosted.php')) {
+    $extra = include('/var/www/custom-saml20-idp-hosted.php');
+    if (!is_array($extra)) {
+        $extra = [];
+    }
+}
+
+
+$metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = array_merge([
     /*
      * The hostname of the server (VHOST) that will use this SAML entity.
      *
@@ -69,4 +79,4 @@ $metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = [
         ],
     ],
     */
-];
+], $extra);
