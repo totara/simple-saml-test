@@ -14,13 +14,20 @@ We currently embed SimpleSAMLphp version **2.0.3**. If you'd like to test with t
 
 ## Getting Started
 
+There is no published image - build it yourself from this repository.
+
 ```shell
-# Download the docker image
-docker pull totara/simple-saml-test:latest
+# Build the image (the default target is the production stage)
+git clone git@github.com:totara/simple-saml-test.git
+cd simple-saml-test
+docker build -t simple-saml-test:local .
 
 # Start the service
-docker run --rm -p 8089:8089 -e LISTEN_PORT=8089 -it totara/simple-saml-test:latest
+docker run --rm -p 8089:8089 -e LISTEN_PORT=8089 -it simple-saml-test:local
 ```
+
+Rebuild whenever you pull this repository, and note that each build generates fresh IdP certificates - any service
+provider holding the old metadata will need to refresh it.
 
 Once started, you can access the service via `http://localhost:{LISTEN_PORT}` (defaults to 8089).
 
@@ -34,15 +41,16 @@ You can teach docker the IP address of your service if it isn't resolvable.
 
 ```shell
 # Instance is running directly on the host machine
-docker run --add-host={YOUR_SP_INSTANCE}:host-gateway ... -it totara/simple-saml-test:latest
+docker run --add-host={YOUR_SP_INSTANCE}:host-gateway ... -it simple-saml-test:local
 
 # Instance is somewhere else, replace the domain & IP
-docker run --add-host={YOUR_SP_INSTANCE}:{IP_OF_SITE} ... -it totara/simple-saml-test:latest
+docker run --add-host={YOUR_SP_INSTANCE}:{IP_OF_SITE} ... -it simple-saml-test:local
 ```
 
 ### Using Totara Docker Dev
 
-If you're using Totara Docker Dev library, you can add this image to the service directly.
+If you're using Totara Docker Dev library, you can add this image to the service directly. Build it first, as above -
+the tag below refers to your local build.
 
 Create a new file called `saml.yml` and add it to the `custom` directory in your Totara docker project.
 
@@ -53,7 +61,7 @@ version: "3.7"
 
 services:
   saml2:
-    image: totara/simple-saml-test:latest
+    image: simple-saml-test:local
     networks:
       - totara
     ports:
@@ -100,7 +108,7 @@ The `username:password` section applies to the IdP, while the internal array is 
 In the example above, the `my_user` user is known as `my_username` or `my_uid` to the service provider and will never see `my_user`.
 
 Once created, include it as a volume, such as:
-`docker run ... -v /path/to/custom-auth-sources.php:/var/www/custom-auth-sources.php ... -it totara/simple-saml-test:latest`
+`docker run ... -v /path/to/custom-auth-sources.php:/var/www/custom-auth-sources.php ... -it simple-saml-test:local`
 
 ## Custom IdP Configuration
 
@@ -108,7 +116,7 @@ To change the settings in `./metadata/saml20-idp-hosted.php` you can create a fi
 Return an array of settings to override or merge into the `saml20-idp-hosted.php` main file.
 
 Once created, include it as a volume, such as:
-`docker run ... -v /path/to/custom-saml20-idp-hosted.php:/var/www/custom-saml20-idp-hosted.php ... -it totara/simple-saml-test:latest`
+`docker run ... -v /path/to/custom-saml20-idp-hosted.php:/var/www/custom-saml20-idp-hosted.php ... -it simple-saml-test:local`
 
 ### Enable Other Certificates
 Three certificates are provided with this docker image:
