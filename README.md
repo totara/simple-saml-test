@@ -140,6 +140,58 @@ return [
 ];
 ```
 
+### Key Transport Algorithms
+
+When an assertion is encrypted, the IdP generates a one-off session key to encrypt it with, then wraps that session key
+with the SP's public key. The algorithm used for the wrapping is the *key transport* algorithm, and it is declared
+separately from the block cipher that encrypts the assertion body.
+
+SimpleSAMLphp only ever uses `rsa-oaep-mgf1p`, the XML Encryption 1.0 algorithm, which fixes both the OAEP digest and
+the MGF1 hash to SHA-1. Hardened identity providers instead use the XML Encryption 1.1 `rsa-oaep`, which declares its
+digest and MGF1 hash explicitly and is normally paired with SHA-256. An SP that assumes SHA-1 cannot decrypt those
+assertions at all, so this image can be told to emit them.
+
+Add a `key_transport` key to your `custom-saml20-idp-hosted.php`:
+
+```php
+return [
+    'key_transport' => [
+        'mode'   => 'rsa-oaep',   // 'stock' (default) leaves SimpleSAMLphp alone
+        'block'  => 'aes256-gcm', // aes128-cbc | aes256-cbc | aes128-gcm | aes256-gcm
+        'digest' => 'sha256',     // OAEP digest: sha1 | sha256 | sha384 | sha512
+        'mgf'    => 'sha256',     // MGF1 hash:   sha1 | sha256 | sha384 | sha512
+    ],
+];
+```
+
+SimpleSAMLphp ignores the unknown key, so it can sit alongside the rest of your IdP overrides. If you would rather keep
+it separate, mount the same array on its own at `/var/www/key-transport.php`.
+
+The default is `stock`, so without this the image behaves exactly as it always has.
+
+With `mode => 'rsa-oaep'` the `<xenc:EncryptedKey>` is emitted as:
+
+```xml
+<xenc:EncryptionMethod Algorithm="http://www.w3.org/2009/xmlenc11#rsa-oaep">
+  <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+  <xenc11:MGF Algorithm="http://www.w3.org/2009/xmlenc11#mgf1sha256"/>
+</xenc:EncryptionMethod>
+```
+
+Useful combinations when testing an SP:
+
+| Setting | What it tells you |
+|---|---|
+| `mode => 'stock'` | The unchanged path. Always worth re-running as a regression check. |
+| `mode => 'rsa-oaep'`, sha256/sha256 | The configuration hardened identity providers use. |
+| `mode => 'rsa-oaep'`, sha1/sha1 | Control: isolates the digest from the algorithm URI, since only the URI changes from stock. |
+| `mode => 'rsa-oaep'`, sha256 digest, sha1 mgf | The two hashes are declared separately and need not match. |
+
+An SP that cannot handle a given combination usually reports only a generic decryption failure, because the algorithms
+are negotiated in the ciphertext rather than the handshake. Expect to read the SP's own logs rather than anything the
+IdP reports, and be wary of matching on a specific OpenSSL error code - OpenSSL's error queue is global, so a stale
+entry is often what surfaces.
+
 ## Developing This Image
 
 * Fork this repo, create a new branch and make the change.
@@ -153,6 +205,7 @@ return [
 * Fork this repo, create a new branch
 * Edit the Dockerfile and change the `SAML_VERSION` build argument to the new version you want to include
 * Check any upgrade notes about things that must change, specifically look for changes that impact modules, hooks or the idp-hosted or idp-remote files.
+* Refresh `patches/key-transport.patch` if the build fails applying it. It is applied with `--fuzz=0` on purpose, so a moved context line breaks the build instead of silently dropping the key transport hook.
 * Test using the built-in docker image with docker-compose, you can run `docker-compose up --build dev` to run the dev version with the config/metadata/modules folders volumed in (
   real time changes).
 * Once everything is all good, test with the prod version `docker-compose up --build prod`.

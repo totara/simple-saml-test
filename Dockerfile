@@ -15,6 +15,15 @@ RUN mkdir /app && \
     rm -rf metadata
 
 
+FROM composer:2 AS key_transport_deps
+
+# phpseclib can produce RSA-OAEP ciphertext with digests the bundled xmlseclibs
+# cannot. Used only by the configurable key transport - see the README.
+WORKDIR /key-transport
+RUN composer init --no-interaction --name=totara/key-transport-deps && \
+    composer require --no-interaction --no-progress phpseclib/phpseclib:^3.0
+
+
 FROM php:8.0-apache-buster AS dev
 
 COPY --from=node_builder /app/samlphp/ /var/www/html/
@@ -50,6 +59,24 @@ RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" && \
 
 RUN mkdir -p /var/www/metadata_storage && \
     chown www-data /var/www/metadata_storage
+
+# --- configurable key transport -------------------------------------------
+# SimpleSAMLphp hardcodes rsa-oaep-mgf1p key transport and AES-128-CBC, so out
+# of the box there is no way to test an SP against anything else. This patches
+# a hook into the vendored saml2 library. It stays inert unless the mounted IdP
+# config sets key_transport.mode, so the image behaves exactly as before by
+# default.
+COPY --from=key_transport_deps /key-transport/vendor/phpseclib /var/www/html/vendor/phpseclib
+COPY --from=key_transport_deps /key-transport/vendor/paragonie /var/www/html/vendor/paragonie
+COPY patches/totara-key-transport.php /var/www/html/vendor/simplesamlphp/saml2/src/SAML2/
+COPY patches/key-transport.patch /tmp/key-transport.patch
+
+# --fuzz=0 so that bumping SAML_VERSION fails the build rather than silently
+# dropping the hook.
+RUN cd /var/www/html && \
+    patch -p1 --fuzz=0 < /tmp/key-transport.patch && \
+    rm /tmp/key-transport.patch
+# --- end configurable key transport ---------------------------------------
 
 
 
