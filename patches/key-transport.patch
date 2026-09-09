@@ -1,0 +1,51 @@
+Make the key transport algorithm configurable.
+
+SimpleSAMLphp hardcodes rsa-oaep-mgf1p key transport and AES-128-CBC block
+encryption here, and the bundled xmlseclibs can only produce SHA-1 OAEP. None
+of it is configurable, so this adds a hook that re-wraps the content encryption
+key after the fact. It is inert unless the mounted IdP config asks for it - see
+the "Key Transport Algorithms" section of the README.
+
+Applied from /var/www/html with `patch -p1`. Expect this to need refreshing
+whenever SAML_VERSION moves; a failed build is the intended signal.
+
+--- a/vendor/simplesamlphp/saml2/src/SAML2/EncryptedAssertion.php
++++ b/vendor/simplesamlphp/saml2/src/SAML2/EncryptedAssertion.php
+@@ -91,6 +91,24 @@
+ 
+             case XMLSecurityKey::RSA_1_5:
+             case XMLSecurityKey::RSA_OAEP_MGF1P:
++                // --- configurable key transport (see patches/totara-key-transport.php) ---
++                require_once __DIR__ . '/totara-key-transport.php';
++                $keyTransport = totara_key_transport_config();
++
++                if ($keyTransport['mode'] !== 'stock') {
++                    [$blockUri] = totara_key_transport_block_algorithm($keyTransport['block']);
++                    $symmetricKey = new XMLSecurityKey($blockUri);
++                    $symmetricKey->generateSessionKey();
++
++                    // Let xmlseclibs build the EncryptedKey scaffolding, then
++                    // replace the wrapped key and its algorithm declarations.
++                    $enc->encryptKey($key, $symmetricKey);
++                    $keyTransportCek = $symmetricKey->key;
++                    $keyTransportPem = openssl_pkey_get_details($key->key)['key'];
++                    break;
++                }
++                // --- end configurable key transport ---
++
+                 $symmetricKey = new XMLSecurityKey(XMLSecurityKey::AES128_CBC);
+                 $symmetricKey->generateSessionKey();
+ 
+@@ -107,6 +125,12 @@
+          * @psalm-suppress UndefinedClass
+          */
+         $this->encryptedData = $enc->encryptNode($symmetricKey);
++
++        // --- configurable key transport ---
++        if (isset($keyTransportCek)) {
++            totara_key_transport_rewrap_key($this->encryptedData, $keyTransportCek, $keyTransportPem, $keyTransport);
++        }
++        // --- end configurable key transport ---
+     }
+ 
+ 
