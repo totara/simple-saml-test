@@ -10,10 +10,13 @@ services:
     environment:
       - LISTEN_PORT=8099
       - SITE_HEADER=Dev SAML Image
+      - CERTIFICATES=${CERTIFICATES:-default}
     volumes:
       - ./metadata/:/var/www/metadata/
       - ./config/:/var/www/config/
       - ./modules/totara/:/var/www/html/modules/totara/
+      - dev-certs:/var/www/html/cert
+      - dev-sp-list:/var/www/metadata_storage
     networks:
       - totara-saml
     extra_hosts:
@@ -29,8 +32,17 @@ services:
     environment:
       - LISTEN_PORT=8098
       - SITE_HEADER=Prod SAML Image
+      - CERTIFICATES=${CERTIFICATES:-default}
+    volumes:
+      - prod-certs:/var/www/html/cert
+      - prod-sp-list:/var/www/metadata_storage
 
 networks:
   totara-saml:
     name: totara-saml
 
+volumes:
+  dev-certs:
+  dev-sp-list:
+  prod-certs:
+  prod-sp-list:

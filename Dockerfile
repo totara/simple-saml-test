@@ -32,6 +32,7 @@ ENV SIMPLESAMLPHP_CONFIG_DIR=/var/www/config/
 ENV SIMPLESAMLPHP_METADATA_DIR=/var/www/metadata/
 ENV SIMPLESAMLPHP_METADATA_STORAGE_DIR=/var/www/metadata_storage/
 ENV LISTEN_PORT=8089
+ENV CERTIFICATES=default
 
 # Default expose port
 EXPOSE 8089
@@ -42,16 +43,10 @@ RUN sed -ri -e 's!/var/www/html!/var/www/html/public/!g' /etc/apache2/sites-avai
     sed -ri -e 's!Listen 80!Listen ${LISTEN_PORT}!g' /etc/apache2/ports.conf && \
     sed -ri -e 's!:80>!:${LISTEN_PORT}>!g' /etc/apache2/sites-available/*.conf
 
-# Generate the internal certificate
-RUN cd /var/www/html/cert &&  \
-    openssl req -subj /C=NZ/ST=Wellington/L=Wellington/O=Totara/OU=Development/CN=server \
-      -newkey rsa:3072 -new -x509 -days 3650 -nodes -out server.crt -keyout server.pem && \
-    openssl req -subj /C=NZ/ST=Wellington/L=Wellington/O=Totara/OU=Development/CN=server \
-      -newkey rsa:3072 -new -x509 -days 3650 -nodes -out new_server.crt -keyout new_server.pem && \
-    openssl req -subj /C=NZ/ST=Wellington/L=Wellington/O=Totara/OU=Development/CN=server \
-      -newkey rsa:3072 -new -x509 -days 1 -nodes -out expired_server.crt -keyout expired_server.pem && \
-    chown www-data *.crt && \
-    chown www-data *.pem
+# Generate the internal certificates. The entrypoint runs this again on start, so a volume over the
+# cert directory keeps its keys and an empty one is filled in.
+COPY scripts/generate-certificates.sh scripts/totara-entrypoint.sh /usr/local/bin/
+RUN generate-certificates.sh
 
 # Expose PHP errors to the CLI
 RUN cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" && \
@@ -78,6 +73,9 @@ RUN cd /var/www/html && \
     rm /tmp/key-transport.patch
 # --- end configurable key transport ---------------------------------------
 
+ENTRYPOINT ["totara-entrypoint.sh"]
+CMD ["apache2-foreground"]
+
 
 
 FROM php:8.0-apache-buster AS prod
@@ -86,6 +84,7 @@ ENV SIMPLESAMLPHP_CONFIG_DIR=/var/www/config/
 ENV SIMPLESAMLPHP_METADATA_DIR=/var/www/metadata/
 ENV SIMPLESAMLPHP_METADATA_STORAGE_DIR=/var/www/metadata_storage/
 ENV LISTEN_PORT=8089
+ENV CERTIFICATES=default
 
 # Default expose port
 EXPOSE 8089
@@ -94,6 +93,7 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 COPY --from=dev /var/www/html /var/www/html
 COPY --from=dev /etc/apache2/ /etc/apache2/
+COPY --from=dev /usr/local/bin/generate-certificates.sh /usr/local/bin/totara-entrypoint.sh /usr/local/bin/
 
 COPY config/ /var/www/config/
 COPY metadata/ /var/www/metadata/
@@ -101,3 +101,6 @@ COPY modules/totara/ /var/www/html/modules/totara/
 
 RUN mkdir -p /var/www/metadata_storage && \
     chown www-data /var/www/metadata_storage
+
+ENTRYPOINT ["totara-entrypoint.sh"]
+CMD ["apache2-foreground"]
