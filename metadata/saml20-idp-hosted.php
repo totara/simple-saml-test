@@ -15,6 +15,36 @@ if (file_exists('/var/www/custom-saml20-idp-hosted.php')) {
     }
 }
 
+/*
+ * Signing keys, picked with the CERTIFICATES environment variable. Paths are relative to the cert
+ * directory. Values from custom-saml20-idp-hosted.php still win over these.
+ */
+$certificates_mode = getenv('CERTIFICATES') ?: 'default';
+$certificates = match ($certificates_mode) {
+    'default' => [
+        'privatekey' => 'server.pem',
+        'certificate' => 'server.crt',
+    ],
+    // Mid-rollover: the metadata lists new_server.crt first and server.crt second, and the IdP
+    // signs with server.crt. An SP that only checks the first certificate will reject it.
+    'rollover' => [
+        'privatekey' => 'server.pem',
+        'certificate' => 'server.crt',
+        'new_privatekey' => 'new_server.pem',
+        'new_certificate' => 'new_server.crt',
+    ],
+    'new' => [
+        'privatekey' => 'new_server.pem',
+        'certificate' => 'new_server.crt',
+    ],
+    'expired' => [
+        'privatekey' => 'expired_server.pem',
+        'certificate' => 'expired_server.crt',
+    ],
+    default => throw new \Exception(
+        "Unknown CERTIFICATES value '{$certificates_mode}'. Use default, rollover, new or expired."
+    ),
+};
 
 $metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = array_merge([
     /*
@@ -23,10 +53,6 @@ $metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = array_merge([
      * Can be '__DEFAULT__', to use this entry by default.
      */
     'host' => '__DEFAULT__',
-
-    // X.509 key and certificate. Relative to the cert directory.
-    'privatekey' => 'server.pem',
-    'certificate' => 'server.crt',
 
     /*
      * Authentication source to use. Must be one that is configured in
@@ -79,4 +105,4 @@ $metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = array_merge([
         ],
     ],
     */
-], $extra);
+], $certificates, $extra);

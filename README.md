@@ -11,6 +11,7 @@ We currently embed SimpleSAMLphp version **2.0.3**. If you'd like to test with t
 |---------------|---------------------------------------------------------------------------------|
 | `LISTEN_PORT` | The port used to access the service. Defaults to `8089`.                        |
 | `SITE_TITLE`  | Override the default site title, used when running multiple to tell them apart. |
+| `CERTIFICATES` | Which signing keys the IdP uses: `default`, `rollover`, `new` or `expired`. See [Certificates](#certificates). |
 
 ## Getting Started
 
@@ -23,11 +24,18 @@ cd simple-saml-test
 docker build -t simple-saml-test:local .
 
 # Start the service
-docker run --rm -p 8089:8089 -e LISTEN_PORT=8089 -it simple-saml-test:local
+docker run --rm -p 8089:8089 -e LISTEN_PORT=8089 \
+  -v simple-saml-certs:/var/www/html/cert \
+  -v simple-saml-sp-list:/var/www/metadata_storage \
+  -it simple-saml-test:local
 ```
 
-Rebuild whenever you pull this repository, and note that each build generates fresh IdP certificates - any service
-provider holding the old metadata will need to refresh it.
+The two named volumes keep the IdP certificates and the list of service providers across restarts and rebuilds. Without
+them every new container starts with the certificates baked into the image, which change on every build, and an empty
+service provider list. Any service provider holding the old IdP metadata then has to refresh it.
+
+Rebuild whenever you pull this repository. To start again from scratch, remove the volumes with
+`docker volume rm simple-saml-certs simple-saml-sp-list`.
 
 Once started, you can access the service via `http://localhost:{LISTEN_PORT}` (defaults to 8089).
 
@@ -69,6 +77,14 @@ services:
     environment:
       - LISTEN_PORT=8089
       - SITE_TITLE="Testing"
+      - CERTIFICATES=default
+    volumes:
+      - saml2-certs:/var/www/html/cert
+      - saml2-sp-list:/var/www/metadata_storage
+
+volumes:
+  saml2-certs:
+  saml2-sp-list:
 ```
 
 Make sure you add `saml2` to your local hosts file, so it resolves in your browser.
@@ -118,35 +134,42 @@ Return an array of settings to override or merge into the `saml20-idp-hosted.php
 Once created, include it as a volume, such as:
 `docker run ... -v /path/to/custom-saml20-idp-hosted.php:/var/www/custom-saml20-idp-hosted.php ... -it simple-saml-test:local`
 
-### Enable Other Certificates
-Three certificates are provided with this docker image:
-+ server.crt / server.pem - Normal key that lasts 10 years
-+ new_server.crt / new_server.pem - Another key that lasts 10 years
-+ expired_server.crt / expired_server.pem - Key that's expired.
+### Certificates
 
-The first is automatically used, but the new and expired can be set by adding the following to your `custom-saml20-idp-hosted.php` override.
+The image ships three key pairs in `/var/www/html/cert`:
 
-```php
-# To change the active key
-return [
-  'privatekey' => 'new_server.pem',
-  'certificate' => 'new_server.crt',
-];
++ `server.crt` / `server.pem` - the normal key, valid for 10 years.
++ `new_server.crt` / `new_server.pem` - a second key, valid for 10 years.
++ `expired_server.crt` / `expired_server.pem` - valid for one day from when it was generated, so it reads as expired
+  after that.
 
-# To have both the regular & new keys together
-return [
-  'privatekey' => 'server.pem',
-  'certificate' => 'server.crt',
-  'new_privatekey' => 'new_server.pem',
-  'new_certificate' => 'new_server.crt',
-];
+Any that are missing are generated when the container starts, so an empty volume or bind mount over the directory is
+filled in on first start and then keeps those keys.
 
-# To use the expired key
-return [
-  'privatekey' => 'expired_server.pem',
-  'certificate' => 'expired_server.crt',
-];
+Pick which keys the IdP uses with the `CERTIFICATES` environment variable:
+
+| Value      | Metadata lists                                  | Signs with   |
+|------------|-------------------------------------------------|--------------|
+| `default`  | `server.crt`                                    | `server.crt` |
+| `rollover` | `new_server.crt` first, then `server.crt`       | `server.crt` |
+| `new`      | `new_server.crt`                                | `new_server.crt` |
+| `expired`  | `expired_server.crt`                            | `expired_server.crt` |
+
+Any other value fails every request with `Unknown CERTIFICATES value`, so a typo cannot pass for a working test.
+
+`rollover` is the state an IdP is in part way through a key rollover. The certificate it signs with is listed second,
+so it catches a service provider that only checks the first signing certificate in the metadata.
+
+```shell
+docker run ... -e CERTIFICATES=rollover ... -it simple-saml-test:local
 ```
+
+With docker-compose, `CERTIFICATES=rollover docker-compose up dev` works without editing the file.
+
+After changing `CERTIFICATES`, refresh the IdP metadata in the service provider.
+
+Keys set in `custom-saml20-idp-hosted.php` override these one by one, for example to point at a certificate of your own
+in a mounted cert directory.
 
 ### Key Transport Algorithms
 
