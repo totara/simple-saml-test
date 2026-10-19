@@ -46,6 +46,7 @@ class Settings {
             'key_transport_field' => KeyTransport::FIELD,
             'key_transport_options' => KeyTransport::options(),
             'key_transport_selected' => KeyTransport::selected(),
+            'encryption_env' => getenv('ENCRYPTION') ?: 'off',
             'certificates' => getenv('CERTIFICATES') ?: 'default',
             'entity_id' => $entity_id,
             'sp_count' => count($handler->getList('saml20-sp-remote')),

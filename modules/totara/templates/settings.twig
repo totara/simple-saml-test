@@ -11,8 +11,9 @@
 
     {% if not encryption %}
     <div class="message-box warning">
-        Assertion encryption is off, so the key transport below is not used. Set
-        <code>'assertion.encryption' =&gt; true</code> in <code>custom-saml20-idp-hosted.php</code>.
+        Assertion encryption is off, so the key transport below is not used. Start the container with
+        <code>-e ENCRYPTION=on</code>, or set <code>'assertion.encryption' =&gt; true</code> in
+        <code>custom-saml20-idp-hosted.php</code>.
     </div>
     {% endif %}
 
@@ -23,6 +24,7 @@
         <tr><th>OAEP digest</th><td><code>{{ key_transport.digest }}</code></td></tr>
         <tr><th>MGF1 hash</th><td><code>{{ key_transport.mgf }}</code></td></tr>
         <tr><th>Key transport from</th><td>{{ key_transport.source }}</td></tr>
+        <tr><th>ENCRYPTION</th><td><code>{{ encryption_env }}</code></td></tr>
         <tr><th>CERTIFICATES</th><td><code>{{ certificates }}</code></td></tr>
         <tr><th>Entity ID</th><td><code>{{ entity_id }}</code></td></tr>
         <tr><th>Service providers</th><td>{{ sp_count }}</td></tr>

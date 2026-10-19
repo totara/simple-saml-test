@@ -12,6 +12,7 @@ We currently embed SimpleSAMLphp version **2.0.3**. If you'd like to test with t
 | `LISTEN_PORT` | The port used to access the service. Defaults to `8089`.                        |
 | `SITE_TITLE`  | Override the default site title, used when running multiple to tell them apart. |
 | `CERTIFICATES` | Which signing keys the IdP uses: `default`, `rollover`, `new` or `expired`. See [Certificates](#certificates). |
+| `ENCRYPTION` | Whether the IdP encrypts assertions: `off` (default) or `on`. See [Encryption](#encryption). |
 
 ## Getting Started
 
@@ -172,6 +173,22 @@ After changing `CERTIFICATES`, refresh the IdP metadata in the service provider.
 Keys set in `custom-saml20-idp-hosted.php` override these one by one, for example to point at a certificate of your own
 in a mounted cert directory.
 
+### Encryption
+
+Assertions are sent unencrypted by default. Turn encryption on with the `ENCRYPTION` environment variable:
+
+```shell
+docker run ... -e ENCRYPTION=on ... -it simple-saml-test:local
+```
+
+With docker-compose, `ENCRYPTION=on docker-compose up dev` works without editing the file.
+
+Any value other than `on` or `off` fails every request with `Unknown ENCRYPTION value`, like `CERTIFICATES`.
+
+With encryption on, the service provider's metadata must include an encryption certificate, otherwise every login
+fails with `Missing encryption key for entity`. A service provider's own metadata can still turn encryption on or off
+for that provider, and `'assertion.encryption'` in `custom-saml20-idp-hosted.php` wins over `ENCRYPTION`.
+
 ### Key Transport Algorithms
 
 When an assertion is encrypted, the IdP generates a one-off session key to encrypt it with, then wraps that session key
@@ -258,8 +275,8 @@ The choice is kept in the IdP session and wins over the mounted file until the s
 at the IdP, later logins from a service provider skip the login page, so the dropdown there is not shown again. Change
 it on the settings page, or log out of the IdP to see the login page again.
 
-Assertion encryption must still be on (`'assertion.encryption' => true` in `custom-saml20-idp-hosted.php`), otherwise
-nothing is encrypted and the choice has no effect.
+Assertion encryption must still be on (see [Encryption](#encryption)), otherwise nothing is encrypted and the choice
+has no effect.
 
 ### Settings Page
 
@@ -268,7 +285,7 @@ The front page (`/module.php/totara/`) shows what the IdP will send right now:
 + whether assertion encryption is on, with a warning when it is off
 + the key transport in effect (mode, block cipher, OAEP digest, MGF1 hash) and where it came from: `session`, `file`
   or `default`
-+ the `CERTIFICATES` mode, the entity ID and the number of service providers
++ the `ENCRYPTION` and `CERTIFICATES` values, the entity ID and the number of service providers
 + whether you are logged in at the IdP
 
 It also has the key transport dropdown, and links to admin, Manage Service Providers and IdP logout. It needs no login.

@@ -11,6 +11,7 @@ services:
       - LISTEN_PORT=8099
       - SITE_HEADER=Dev SAML Image
       - CERTIFICATES=${CERTIFICATES:-default}
+      - ENCRYPTION=${ENCRYPTION:-off}
     volumes:
       - ./metadata/:/var/www/metadata/
       - ./config/:/var/www/config/
@@ -33,6 +34,7 @@ services:
       - LISTEN_PORT=8098
       - SITE_HEADER=Prod SAML Image
       - CERTIFICATES=${CERTIFICATES:-default}
+      - ENCRYPTION=${ENCRYPTION:-off}
     volumes:
       - prod-certs:/var/www/html/cert
       - prod-sp-list:/var/www/metadata_storage
