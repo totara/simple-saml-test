@@ -46,6 +46,17 @@ $certificates = match ($certificates_mode) {
     ),
 };
 
+/*
+ * Assertion encryption, picked with the ENCRYPTION environment variable. A service provider's metadata can still turn
+ * it on or off for that provider, and custom-saml20-idp-hosted.php still wins over this.
+ */
+$encryption_mode = getenv('ENCRYPTION') ?: 'off';
+$encryption = match ($encryption_mode) {
+    'on' => ['assertion.encryption' => true],
+    'off' => ['assertion.encryption' => false],
+    default => throw new \Exception("Unknown ENCRYPTION value '{$encryption_mode}'. Use on or off."),
+};
+
 $metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = array_merge([
     /*
      * The hostname of the server (VHOST) that will use this SAML entity.
@@ -105,4 +116,4 @@ $metadata['urn:x-simplesaml:idp-' . getenv('LISTEN_PORT')] = array_merge([
         ],
     ],
     */
-], $certificates, $extra);
+], $certificates, $encryption, $extra);
