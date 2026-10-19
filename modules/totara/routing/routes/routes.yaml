@@ -15,3 +15,9 @@ totara-metadata-delete:
     defaults:   {
         _controller: 'SimpleSAML\Module\totara\Controller\ManageMetadata::delete'
     }
+
+totara-settings:
+    path:       /
+    defaults:   {
+        _controller: 'SimpleSAML\Module\totara\Controller\Settings::main'
+    }

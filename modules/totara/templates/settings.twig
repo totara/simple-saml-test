@@ -1,0 +1,45 @@
+{% set pagetitle = '{totara:settings:page_title}'|trans %}
+{% extends "base.twig" %}
+
+{% block content %}
+    <h2>{{ '{totara:settings:page_title}'|trans }}</h2>
+    <p>
+        <a href="{{ admin_url }}">Admin</a> |
+        <a href="{{ metadata_url }}">{{ '{totara:link_manage_metadata}'|trans }}</a> |
+        <a href="{{ idp_logout }}">Log out of the IdP</a>
+    </p>
+
+    {% if not encryption %}
+    <div class="message-box warning">
+        Assertion encryption is off, so the key transport below is not used. Set
+        <code>'assertion.encryption' =&gt; true</code> in <code>custom-saml20-idp-hosted.php</code>.
+    </div>
+    {% endif %}
+
+    <table class="attributes pure-table pure-table-striped">
+        <tr><th>Assertion encryption</th><td>{{ encryption ? 'On' : 'Off' }}</td></tr>
+        <tr><th>Key transport</th><td><code>{{ key_transport.mode }}</code></td></tr>
+        <tr><th>Block cipher</th><td><code>{{ key_transport.block }}</code></td></tr>
+        <tr><th>OAEP digest</th><td><code>{{ key_transport.digest }}</code></td></tr>
+        <tr><th>MGF1 hash</th><td><code>{{ key_transport.mgf }}</code></td></tr>
+        <tr><th>Key transport from</th><td>{{ key_transport.source }}</td></tr>
+        <tr><th>CERTIFICATES</th><td><code>{{ certificates }}</code></td></tr>
+        <tr><th>Entity ID</th><td><code>{{ entity_id }}</code></td></tr>
+        <tr><th>Service providers</th><td>{{ sp_count }}</td></tr>
+        <tr><th>Logged in at the IdP</th><td>{{ logged_in ? 'Yes' : 'No' }}</td></tr>
+    </table>
+
+    <form method="post" class="pure-form">
+        <h3>{{ '{totara:key_transport:label}'|trans }}</h3>
+        <p>
+            rsa-oaep presets are named digest/MGF1 hash. Applies to every login in this browser session. While you are logged in at the IdP, service provider
+            logins skip the login page, so change it here or log out of the IdP.
+        </p>
+        <select name="{{ key_transport_field }}">
+            {% for value, label in key_transport_options %}
+            <option value="{{ value }}"{% if value == key_transport_selected %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button class="pure-button pure-button-red">Save</button>
+    </form>
+{% endblock %}
