@@ -39,7 +39,8 @@ Rebuild whenever you pull this repository. To start again from scratch, remove t
 
 Once started, you can access the service via `http://localhost:{LISTEN_PORT}` (defaults to 8089).
 
-Open the site, login as admin, and then navigate to Manage Service Providers.
+Open the site. The front page shows what the IdP will send (see [Settings Page](#settings-page)) and links to admin.
+Log in as admin, and then navigate to Manage Service Providers.
 Add any SP instances on the page there, the URL must be the full URL to your metadata (it does not fully validate).
 
 Eg: `http://{YOUR_SP_INSTANCE}/path/to/metadata.php`
@@ -187,7 +188,7 @@ Add a `key_transport` key to your `custom-saml20-idp-hosted.php`:
 ```php
 return [
     'key_transport' => [
-        'mode'   => 'rsa-oaep',   // 'stock' (default) leaves SimpleSAMLphp alone
+        'mode'   => 'rsa-oaep',   // 'stock' (default) leaves SimpleSAMLphp alone, 'rsa-1_5' see below
         'block'  => 'aes256-gcm', // aes128-cbc | aes256-cbc | aes128-gcm | aes256-gcm
         'digest' => 'sha256',     // OAEP digest: sha1 | sha256 | sha384 | sha512
         'mgf'    => 'sha256',     // MGF1 hash:   sha1 | sha256 | sha384 | sha512
@@ -218,10 +219,59 @@ Useful combinations when testing an SP:
 | `mode => 'rsa-oaep'`, sha1/sha1 | Control: isolates the digest from the algorithm URI, since only the URI changes from stock. |
 | `mode => 'rsa-oaep'`, sha256 digest, sha1 mgf | The two hashes are declared separately and need not match. |
 
+With `mode => 'rsa-1_5'` the session key is wrapped with RSA PKCS#1 v1.5 instead, and declared with no parameters:
+
+```xml
+<xenc:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-1_5"/>
+```
+
+`digest` and `mgf` are ignored in that mode, `block` still applies. rsa-1_5 is deprecated, so this is for checking
+what an SP does with it, not for a normal setup.
+
 An SP that cannot handle a given combination usually reports only a generic decryption failure, because the algorithms
 are negotiated in the ciphertext rather than the handshake. Expect to read the SP's own logs rather than anything the
 IdP reports, and be wary of matching on a specific OpenSSL error code - OpenSSL's error queue is global, so a stale
 entry is often what surfaces.
+
+#### Picking the key transport per session
+
+The key transport can also be picked in the browser, without editing the mounted file. Both places below offer the same
+fixed presets:
+
+| Preset | Sends |
+|---|---|
+| `configured` | Whatever the mounted file or the default says. This is the default choice. |
+| `stock` | rsa-oaep-mgf1p, SHA-1 |
+| `rsa-oaep-sha256-sha256` | rsa-oaep, digest SHA-256, MGF1 SHA-256 |
+| `rsa-oaep-sha256-sha1` | rsa-oaep, digest SHA-256, MGF1 SHA-1 |
+| `rsa-oaep-sha1-sha1` | rsa-oaep, digest SHA-1, MGF1 SHA-1 |
+| `rsa-oaep-sha512-sha512` | rsa-oaep, digest SHA-512, MGF1 SHA-512 |
+| `rsa-1_5` | rsa-1_5 |
+
+The block cipher is not part of a preset, it comes from the mounted file or the default (`aes256-gcm`).
+
++ **Login page**: the IdP login form has a "Key transport" dropdown when the login is for a service provider. The
+  admin login does not show it, since the choice only applies to assertions sent to a service provider.
++ **Settings page**: the front page has the same dropdown. See below.
+
+The choice is kept in the IdP session and wins over the mounted file until the session ends. Once you are logged in
+at the IdP, later logins from a service provider skip the login page, so the dropdown there is not shown again. Change
+it on the settings page, or log out of the IdP to see the login page again.
+
+Assertion encryption must still be on (`'assertion.encryption' => true` in `custom-saml20-idp-hosted.php`), otherwise
+nothing is encrypted and the choice has no effect.
+
+### Settings Page
+
+The front page (`/module.php/totara/`) shows what the IdP will send right now:
+
++ whether assertion encryption is on, with a warning when it is off
++ the key transport in effect (mode, block cipher, OAEP digest, MGF1 hash) and where it came from: `session`, `file`
+  or `default`
++ the `CERTIFICATES` mode, the entity ID and the number of service providers
++ whether you are logged in at the IdP
+
+It also has the key transport dropdown, and links to admin, Manage Service Providers and IdP logout. It needs no login.
 
 ## Developing This Image
 
@@ -236,6 +286,7 @@ entry is often what surfaces.
 * Fork this repo, create a new branch
 * Edit the Dockerfile and change the `SAML_VERSION` build argument to the new version you want to include
 * Check any upgrade notes about things that must change, specifically look for changes that impact modules, hooks or the idp-hosted or idp-remote files.
+* Refresh `modules/totara/themes/simple/core/loginuserpass.twig` from the new `modules/core/templates/loginuserpass.twig`. It is a copy with the key transport dropdown added, so it does not pick up core changes by itself.
 * Refresh `patches/key-transport.patch` if the build fails applying it. It is applied with `--fuzz=0` on purpose, so a moved context line breaks the build instead of silently dropping the key transport hook.
 * Test using the built-in docker image with docker-compose, you can run `docker-compose up --build dev` to run the dev version with the config/metadata/modules folders volumed in (
   real time changes).

@@ -10,19 +10,40 @@
  *
  * Copied into the vendored saml2 library at build time and called from the hook
  * added by patches/key-transport.patch. It does nothing unless the mounted IdP
- * config asks for it - see "Key Transport Algorithms" in the README.
+ * config or a preset picked in the IdP session asks for it - see "Key Transport
+ * Algorithms" in the README.
  */
 
 function totara_key_transport_config(): array {
     $defaults = [
         // 'stock'    - leave SimpleSAMLphp alone (rsa-oaep-mgf1p + aes128-cbc)
         // 'rsa-oaep' - xmlenc11#rsa-oaep with a configurable digest and MGF1 hash
+        // 'rsa-1_5'  - xmlenc#rsa-1_5, RSA PKCS#1 v1.5 with no digest or MGF
         'mode'   => 'stock',
         'block'  => 'aes256-gcm', // aes128-cbc | aes256-cbc | aes128-gcm | aes256-gcm
         'digest' => 'sha256',     // OAEP digest
         'mgf'    => 'sha256',     // MGF1 hash
     ];
 
+    $file = totara_key_transport_file_config();
+    $config = ($file ?? []) + $defaults;
+    $config['source'] = $file === null ? 'default' : 'file';
+
+    // A preset picked on the login or settings page wins for the rest of that
+    // IdP session. The module class is only there when SimpleSAMLphp's
+    // autoloader is, so a bare CLI script skips this.
+    if (class_exists(\SimpleSAML\Module\totara\KeyTransport::class)) {
+        $preset = \SimpleSAML\Module\totara\KeyTransport::session_config();
+        if ($preset !== null) {
+            $config = ['source' => 'session'] + $preset + $config;
+        }
+    }
+
+    return $config;
+}
+
+/** The key transport settings from the mounted config, or null when none are set. */
+function totara_key_transport_file_config(): ?array {
     // Preferred source: the 'key_transport' key of the mounted IdP config, so
     // the setting lives with the rest of the local IdP configuration and
     // survives the container being recreated.
@@ -35,14 +56,14 @@ function totara_key_transport_config(): array {
             continue;
         }
         if (isset($custom['key_transport']) && is_array($custom['key_transport'])) {
-            return $custom['key_transport'] + $defaults;
+            return $custom['key_transport'];
         }
         if (isset($custom['mode'])) {
-            return $custom + $defaults;
+            return $custom;
         }
     }
 
-    return $defaults;
+    return null;
 }
 
 function totara_key_transport_autoload(): void {
@@ -81,7 +102,8 @@ function totara_key_transport_block_algorithm(string $name): array {
 /**
  * Rewrite the <xenc:EncryptedKey> inside an <xenc:EncryptedData> element so the
  * content encryption key is wrapped with RSA-OAEP using a configurable digest
- * and MGF1 hash, and the declarations say so.
+ * and MGF1 hash, or with RSA PKCS#1 v1.5 for mode 'rsa-1_5', and the
+ * declarations say so.
  *
  * @param \DOMElement $encryptedData
  * @param string      $cek        raw content encryption key bytes
@@ -92,7 +114,6 @@ function totara_key_transport_rewrap_key(\DOMElement $encryptedData, string $cek
 
     $xencNs   = 'http://www.w3.org/2001/04/xmlenc#';
     $xenc11Ns = 'http://www.w3.org/2009/xmlenc11#';
-    $dsNs     = 'http://www.w3.org/2000/09/xmldsig#';
 
     $doc   = $encryptedData->ownerDocument;
     $xpath = new \DOMXPath($doc);
@@ -105,11 +126,17 @@ function totara_key_transport_rewrap_key(\DOMElement $encryptedData, string $cek
     /** @var \DOMElement $encKey */
     $encKey = $encKeyList->item(0);
 
-    // Re-wrap the CEK with the requested OAEP parameters.
-    $rsa = \phpseclib3\Crypt\PublicKeyLoader::load($publicPem)
-        ->withPadding(\phpseclib3\Crypt\RSA::ENCRYPTION_OAEP)
-        ->withHash($config['digest'])
-        ->withMGFHash($config['mgf']);
+    $pkcs1 = $config['mode'] === 'rsa-1_5';
+
+    // Re-wrap the CEK with the requested padding and OAEP parameters.
+    $rsa = \phpseclib3\Crypt\PublicKeyLoader::load($publicPem);
+    if ($pkcs1) {
+        $rsa = $rsa->withPadding(\phpseclib3\Crypt\RSA::ENCRYPTION_PKCS1);
+    } else {
+        $rsa = $rsa->withPadding(\phpseclib3\Crypt\RSA::ENCRYPTION_OAEP)
+            ->withHash($config['digest'])
+            ->withMGFHash($config['mgf']);
+    }
     $wrapped = $rsa->encrypt($cek);
 
     // Replace the ciphertext.
@@ -119,10 +146,28 @@ function totara_key_transport_rewrap_key(\DOMElement $encryptedData, string $cek
     }
     $cipherValue->nodeValue = base64_encode($wrapped);
 
-    // Replace the EncryptionMethod with xmlenc11#rsa-oaep plus its parameters.
+    // Replace the EncryptionMethod with xmlenc#rsa-1_5, which takes no
+    // parameters, or xmlenc11#rsa-oaep plus its parameters.
     $oldMethod = $xpath->query('./xenc:EncryptionMethod', $encKey)->item(0);
     $newMethod = $doc->createElementNS($xencNs, 'xenc:EncryptionMethod');
-    $newMethod->setAttribute('Algorithm', $xenc11Ns . 'rsa-oaep');
+    $newMethod->setAttribute('Algorithm', $pkcs1 ? $xencNs . 'rsa-1_5' : $xenc11Ns . 'rsa-oaep');
+
+    if (!$pkcs1) {
+        totara_key_transport_add_oaep_params($newMethod, $config);
+    }
+
+    if ($oldMethod instanceof \DOMElement) {
+        $encKey->replaceChild($newMethod, $oldMethod);
+    } else {
+        $encKey->insertBefore($newMethod, $encKey->firstChild);
+    }
+}
+
+/** Add the <ds:DigestMethod> and <xenc11:MGF> children of an rsa-oaep EncryptionMethod. */
+function totara_key_transport_add_oaep_params(\DOMElement $method, array $config): void {
+    $xenc11Ns = 'http://www.w3.org/2009/xmlenc11#';
+    $dsNs     = 'http://www.w3.org/2000/09/xmldsig#';
+    $doc      = $method->ownerDocument;
 
     $digestUri = match ($config['digest']) {
         'sha1'   => 'http://www.w3.org/2000/09/xmldsig#sha1',
@@ -133,15 +178,9 @@ function totara_key_transport_rewrap_key(\DOMElement $encryptedData, string $cek
     };
     $digest = $doc->createElementNS($dsNs, 'ds:DigestMethod');
     $digest->setAttribute('Algorithm', $digestUri);
-    $newMethod->appendChild($digest);
+    $method->appendChild($digest);
 
     $mgf = $doc->createElementNS($xenc11Ns, 'xenc11:MGF');
     $mgf->setAttribute('Algorithm', $xenc11Ns . 'mgf1' . $config['mgf']);
-    $newMethod->appendChild($mgf);
-
-    if ($oldMethod instanceof \DOMElement) {
-        $encKey->replaceChild($newMethod, $oldMethod);
-    } else {
-        $encKey->insertBefore($newMethod, $encKey->firstChild);
-    }
+    $method->appendChild($mgf);
 }

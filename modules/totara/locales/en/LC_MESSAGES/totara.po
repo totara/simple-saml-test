@@ -3,3 +3,9 @@ msgstr "Manage Service Providers"
 
 msgid "{totara:manage_metadata:page_title}"
 msgstr "Manage Service Providers"
+
+msgid "{totara:settings:page_title}"
+msgstr "Test IdP Settings"
+
+msgid "{totara:key_transport:label}"
+msgstr "Key transport"

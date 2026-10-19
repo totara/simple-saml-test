@@ -810,7 +810,8 @@ $config = [
      * the 'theme.controller' configuration option to a class that implements the
      * \SimpleSAML\XHTML\TemplateControllerInterface interface to use it.
      */
-    //'theme.controller' => '',
+    // Gives the login page override the key transport picker's options.
+    'theme.controller' => 'SimpleSAML\\Module\\totara\\ThemeController',
 
     /*
      * Templating options
@@ -872,7 +873,7 @@ $config = [
      * front page to somewhere more useful. If left unset, a basic welcome message
      * is shown.
      */
-    'frontpage.redirect' => '/admin',
+    'frontpage.redirect' => '/module.php/totara/',
 
 
     /*********************
@@ -924,6 +925,9 @@ $config = [
 
         // Adopts language from attribute to use in UI
         30 => 'core:LanguageAdaptor',
+
+        // Saves the key transport picked on the login page into the session.
+        35 => 'totara:KeyTransport',
 
         45 => [
             'class'         => 'core:StatisticsWithAttribute',
